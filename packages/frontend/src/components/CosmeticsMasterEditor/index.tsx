@@ -11,6 +11,11 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   IconButton,
   Snackbar,
@@ -143,7 +148,8 @@ function EditableRow({
   onUpdate: (updated: CosmeticItem) => void;
   onDelete: (id: string) => void;
 }) {
-  const [editing, setEditing]     = useState(false);
+  const [editing, setEditing]             = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [draftMaker, setDraftMaker]       = useState(item.maker);
   const [draftName, setDraftName]         = useState(item.name);
   const [draftStart, setDraftStart]       = useState(item.startDate ?? '');
@@ -195,7 +201,28 @@ function EditableRow({
               <CloseIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+          <Tooltip title="削除">
+            <IconButton size="small" color="error" onClick={() => setConfirmDelete(true)}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </TableCell>
+
+        {/* 削除確認ダイアログ */}
+        <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+          <DialogTitle>削除の確認</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              「{item.maker ? `${item.maker} / ` : ''}{item.name}」を削除しますか？この操作は元に戻せません。
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmDelete(false)}>キャンセル</Button>
+            <Button color="error" variant="contained" onClick={() => { setConfirmDelete(false); onDelete(item.id); }}>
+              削除
+            </Button>
+          </DialogActions>
+        </Dialog>
       </TableRow>
     );
   }
@@ -226,11 +253,6 @@ function EditableRow({
         <Tooltip title="編集">
           <IconButton size="small" onClick={() => setEditing(true)}>
             <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="削除">
-          <IconButton size="small" color="error" onClick={() => onDelete(item.id)}>
-            <DeleteIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       </TableCell>

@@ -114,7 +114,7 @@ export default function InputForm() {
 
         {/* おでこ */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2}>
+          <Card elevation={0}>
             <CardContent>
               <SkinMetricsInput label="おでこ" value={forehead} onChange={setForehead} />
             </CardContent>
@@ -123,7 +123,7 @@ export default function InputForm() {
 
         {/* ほお */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2}>
+          <Card elevation={0}>
             <CardContent>
               <SkinMetricsInput label="ほお" value={cheek} onChange={setCheek} />
             </CardContent>
@@ -132,7 +132,7 @@ export default function InputForm() {
 
         {/* 使用化粧品 */}
         <Grid item xs={12}>
-          <Card elevation={2}>
+          <Card elevation={0}>
             <CardContent>
               <CosmeticsSelector value={cosmetics} master={master} onChange={setCosmetics} />
             </CardContent>
@@ -141,7 +141,7 @@ export default function InputForm() {
 
         {/* ライフログ */}
         <Grid item xs={12}>
-          <Card elevation={2}>
+          <Card elevation={0}>
             <CardContent>
               <ExternalFactorsInput value={factors} onChange={setFactors} />
             </CardContent>

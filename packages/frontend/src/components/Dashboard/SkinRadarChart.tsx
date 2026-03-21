@@ -14,24 +14,18 @@ import {
 } from 'recharts';
 import { Box, Typography } from '@mui/material';
 import { NormalizedRecord, RadarDataPoint } from '../../types';
+import { SCALE_MAX, METRIC_LABELS } from '../../constants';
 
 interface Props {
   record: NormalizedRecord | null;
 }
 
-const METRIC_LABELS: { key: string; label: string }[] = [
-  { key: 'tone', label: '白さ' },
-  { key: 'moisture', label: '水分' },
-  { key: 'oil', label: '油分' },
-  { key: 'elasticity', label: '弾力' },
-];
-
 function buildRadarData(record: NormalizedRecord): RadarDataPoint[] {
-  return METRIC_LABELS.map(({ key, label }) => ({
-    metric: label,
-    forehead: record.forehead[key as keyof typeof record.forehead],
-    cheek: record.cheek[key as keyof typeof record.cheek],
-    fullMark: 10,
+  return (Object.keys(METRIC_LABELS) as Array<keyof typeof record.forehead>).map((key) => ({
+    metric: METRIC_LABELS[key],
+    forehead: record.forehead[key],
+    cheek: record.cheek[key],
+    fullMark: SCALE_MAX,
   }));
 }
 
@@ -55,21 +49,9 @@ export default function SkinRadarChart({ record }: Props) {
         <RadarChart data={data}>
           <PolarGrid />
           <PolarAngleAxis dataKey="metric" tick={{ fontSize: 14 }} />
-          <PolarRadiusAxis angle={90} domain={[0, 10]} tickCount={6} tick={{ fontSize: 10 }} />
-          <Radar
-            name="おでこ"
-            dataKey="forehead"
-            stroke="#e91e63"
-            fill="#e91e63"
-            fillOpacity={0.3}
-          />
-          <Radar
-            name="ほお"
-            dataKey="cheek"
-            stroke="#2196f3"
-            fill="#2196f3"
-            fillOpacity={0.3}
-          />
+          <PolarRadiusAxis angle={90} domain={[0, SCALE_MAX]} tickCount={6} tick={{ fontSize: 10 }} />
+          <Radar name="おでこ" dataKey="forehead" stroke="#e91e63" fill="#e91e63" fillOpacity={0.3} />
+          <Radar name="ほお" dataKey="cheek" stroke="#2196f3" fill="#2196f3" fillOpacity={0.3} />
           <Legend />
           <Tooltip />
         </RadarChart>

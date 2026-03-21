@@ -103,8 +103,61 @@ export class CsvRepository {
     logger.info(`Appended new row at ${timestamp}`);
   }
 
+  /** timestamp が一致する行を更新して CSV 全体を書き直す */
+  async updateRow(timestamp: string, entry: SkinEntryInput): Promise<boolean> {
+    const rows = await this.loadAllRows();
+    const index = rows.findIndex((r) => r.timestamp === timestamp);
+    if (index === -1) return false;
+
+    const newTimestamp = entry.date ? `${entry.date}T00:00:00.000` : timestamp;
+    const updated: RawSheetRow = {
+      timestamp: newTimestamp,
+      foreheadTone: String(entry.forehead.tone),
+      foreheadMoisture: String(entry.forehead.moisture),
+      foreheadOil: String(entry.forehead.oil),
+      foreheadElasticity: String(entry.forehead.elasticity),
+      cheekTone: String(entry.cheek.tone),
+      cheekMoisture: String(entry.cheek.moisture),
+      cheekOil: String(entry.cheek.oil),
+      cheekElasticity: String(entry.cheek.elasticity),
+      toner: entry.cosmetics.toner,
+      essence: entry.cosmetics.essence,
+      lotion: entry.cosmetics.lotion,
+      businessTrip: entry.factors.businessTrip ? 'TRUE' : 'FALSE',
+      alcohol: entry.factors.alcohol ? 'TRUE' : 'FALSE',
+      sleepHours: String(entry.factors.sleepHours),
+      notes: entry.factors.notes,
+    };
+    rows[index] = updated;
+    this.writeAllRows(rows);
+    logger.info(`Updated row with timestamp: ${timestamp}`);
+    return true;
+  }
+
+  /** timestamp が一致する行を削除して CSV 全体を書き直す */
+  async deleteRow(timestamp: string): Promise<boolean> {
+    const rows = await this.loadAllRows();
+    const filtered = rows.filter((r) => r.timestamp !== timestamp);
+    if (filtered.length === rows.length) return false;
+    this.writeAllRows(filtered);
+    logger.info(`Deleted row with timestamp: ${timestamp}`);
+    return true;
+  }
+
   /** CSV ファイルのパスを返す（ダウンロード用） */
   getCsvPath(): string {
     return this.csvPath;
+  }
+
+  private writeAllRows(rows: RawSheetRow[]): void {
+    const lines = rows.map((r) =>
+      [
+        r.timestamp, r.foreheadTone, r.foreheadMoisture, r.foreheadOil, r.foreheadElasticity,
+        r.cheekTone, r.cheekMoisture, r.cheekOil, r.cheekElasticity,
+        r.toner, r.essence, r.lotion,
+        r.businessTrip, r.alcohol, r.sleepHours, r.notes,
+      ].map(escapeField).join(',')
+    );
+    fs.writeFileSync(this.csvPath, CSV_HEADERS.join(',') + '\n' + lines.join('\n') + (lines.length ? '\n' : ''), 'utf-8');
   }
 }

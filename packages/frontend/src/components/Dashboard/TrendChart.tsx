@@ -15,26 +15,13 @@ import {
 import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { useState } from 'react';
 import { NormalizedRecord, TrendDataPoint } from '../../types';
+import { SCALE_MAX, METRIC_LABELS, METRIC_COLORS } from '../../constants';
 
 type AreaFilter = 'forehead' | 'cheek' | 'both';
 
 interface Props {
   records: NormalizedRecord[];
 }
-
-const COLORS = {
-  tone: '#e91e63',
-  moisture: '#2196f3',
-  oil: '#ff9800',
-  elasticity: '#4caf50',
-};
-
-const METRIC_LABELS = {
-  tone: '白さ',
-  moisture: '水分',
-  oil: '油分',
-  elasticity: '弾力',
-};
 
 function buildTrendData(records: NormalizedRecord[]): TrendDataPoint[] {
   return records.map((r) => ({
@@ -87,85 +74,25 @@ export default function TrendChart({ records }: Props) {
         <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-          <YAxis domain={[0, 10]} tickCount={6} tick={{ fontSize: 11 }} />
+          <YAxis domain={[0, SCALE_MAX]} tickCount={6} tick={{ fontSize: 11 }} />
           <Tooltip />
           <Legend />
 
           {showForehead && (
             <>
-              <Line
-                type="monotone"
-                dataKey="foreheadTone"
-                name={`おでこ・${METRIC_LABELS.tone}`}
-                stroke={COLORS.tone}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                strokeDasharray="6 2"
-              />
-              <Line
-                type="monotone"
-                dataKey="foreheadMoisture"
-                name={`おでこ・${METRIC_LABELS.moisture}`}
-                stroke={COLORS.moisture}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                strokeDasharray="6 2"
-              />
-              <Line
-                type="monotone"
-                dataKey="foreheadOil"
-                name={`おでこ・${METRIC_LABELS.oil}`}
-                stroke={COLORS.oil}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                strokeDasharray="6 2"
-              />
-              <Line
-                type="monotone"
-                dataKey="foreheadElasticity"
-                name={`おでこ・${METRIC_LABELS.elasticity}`}
-                stroke={COLORS.elasticity}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                strokeDasharray="6 2"
-              />
+              <Line type="monotone" dataKey="foreheadTone" name={`おでこ・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
+              <Line type="monotone" dataKey="foreheadMoisture" name={`おでこ・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
+              <Line type="monotone" dataKey="foreheadOil" name={`おでこ・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
+              <Line type="monotone" dataKey="foreheadElasticity" name={`おでこ・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
             </>
           )}
 
           {showCheek && (
             <>
-              <Line
-                type="monotone"
-                dataKey="cheekTone"
-                name={`ほお・${METRIC_LABELS.tone}`}
-                stroke={COLORS.tone}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="cheekMoisture"
-                name={`ほお・${METRIC_LABELS.moisture}`}
-                stroke={COLORS.moisture}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="cheekOil"
-                name={`ほお・${METRIC_LABELS.oil}`}
-                stroke={COLORS.oil}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="cheekElasticity"
-                name={`ほお・${METRIC_LABELS.elasticity}`}
-                stroke={COLORS.elasticity}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
+              <Line type="monotone" dataKey="cheekTone" name={`ほお・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="cheekMoisture" name={`ほお・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="cheekOil" name={`ほお・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="cheekElasticity" name={`ほお・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} />
             </>
           )}
         </LineChart>

@@ -68,7 +68,23 @@ export async function submitEntry(entry: SkinEntryInput): Promise<void> {
     body: JSON.stringify(entry),
   });
   const json: ApiResponse<null> = await res.json();
-  if (!json.success) {
-    throw new Error(json.error ?? '保存に失敗しました');
-  }
+  if (!json.success) throw new Error(json.error ?? '保存に失敗しました');
+}
+
+export async function updateRecord(timestamp: string, entry: SkinEntryInput): Promise<void> {
+  const res = await fetch(`${API_BASE}/records/${encodeURIComponent(timestamp)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  });
+  const json: ApiResponse<null> = await res.json();
+  if (!json.success) throw new Error(json.error ?? '更新に失敗しました');
+}
+
+export async function deleteRecord(timestamp: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/records/${encodeURIComponent(timestamp)}`, {
+    method: 'DELETE',
+  });
+  const json: ApiResponse<null> = await res.json();
+  if (!json.success) throw new Error(json.error ?? '削除に失敗しました');
 }
