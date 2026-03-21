@@ -83,6 +83,7 @@ export interface SkinEntryInput {
   cheek: SkinMetrics;
   cosmetics: CosmeticsUsed;
   factors: ExternalFactors;
+  date?: string; // ISO date (YYYY-MM-DD), 省略時はサーバー側で当日を使用
 }
 
 /** APIレスポンス共通ラッパー */
@@ -98,9 +99,18 @@ export type PeriodFilter = 'week' | 'month' | 'all';
 /** 分析種別 */
 export type AnalysisType = 'trend' | 'comparison' | 'correlation';
 
+/** 化粧品マスタの1アイテム */
+export interface CosmeticItem {
+  id: string;
+  maker: string;
+  name: string;
+  startDate?: string; // ISO date (YYYY-MM-DD)
+  endDate?: string;   // ISO date (YYYY-MM-DD)
+}
+
 /** 化粧品マスタ */
 export interface CosmeticsMaster {
-  toners: string[];
-  essences: string[];
-  lotions: string[];
+  toners: CosmeticItem[];
+  essences: CosmeticItem[];
+  lotions: CosmeticItem[];
 }

@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import {
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -24,6 +25,7 @@ import {
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import DownloadIcon from '@mui/icons-material/Download';
 import { useSkinData } from '../../hooks/useSkinData';
 import { NormalizedRecord, SkinMetrics } from '../../types';
 
@@ -228,17 +230,33 @@ function DatasetSummary({ records }: { records: NormalizedRecord[] }) {
   );
 }
 
+function handleCsvDownload() {
+  const a = document.createElement('a');
+  a.href = '/api/export/csv';
+  a.click();
+}
+
 export default function DataTable() {
   const { records, loading, error } = useSkinData('all');
   const [tab, setTab] = useState(0);
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} gutterBottom>
-        データビュー
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={1} flexWrap="wrap" gap={1}>
+        <Typography variant="h5" fontWeight={700}>
+          データビュー
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadIcon />}
+          onClick={handleCsvDownload}
+        >
+          CSV ダウンロード
+        </Button>
+      </Box>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        スプレッドシートから取得・正規化されたデータを確認できます
+        記録したデータを確認・CSV形式でダウンロードできます
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

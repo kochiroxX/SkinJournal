@@ -24,6 +24,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import TuneIcon from '@mui/icons-material/Tune';
 import SpaIcon from '@mui/icons-material/Spa';
 
 const DRAWER_WIDTH = 220;
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { label: 'ダッシュボード', path: '/', icon: <DashboardIcon /> },
   { label: '肌状態を記録', path: '/input', icon: <EditNoteIcon /> },
   { label: 'データビュー', path: '/data', icon: <TableChartIcon /> },
+  { label: '化粧品マスタ', path: '/settings', icon: <TuneIcon /> },
 ];
 
 interface Props {
@@ -101,8 +103,8 @@ export default function Layout({ children }: Props) {
             >
               <MenuIcon />
             </IconButton>
-            <SpaIcon sx={{ mr: 1 }} />
-            <Typography variant="h6" fontWeight={700}>
+            <SpaIcon sx={{ mr: 1, flexShrink: 0 }} />
+            <Typography variant="h6" fontWeight={700} noWrap>
               SkinJournal
             </Typography>
           </Toolbar>

@@ -8,10 +8,10 @@ interface Props {
 }
 
 const METRICS: { key: keyof SkinMetrics; label: string; color: string }[] = [
-  { key: 'tone', label: '白さ', color: '#f8bbd0' },
-  { key: 'moisture', label: '水分', color: '#bbdefb' },
-  { key: 'oil', label: '油分', color: '#fff9c4' },
-  { key: 'elasticity', label: '弾力', color: '#c8e6c9' },
+  { key: 'tone', label: '肌色', color: '#f8bbd0' },
+  { key: 'moisture', label: '水分量', color: '#bbdefb' },
+  { key: 'oil', label: '油分量', color: '#fff9c4' },
+  { key: 'elasticity', label: '弾性力', color: '#c8e6c9' },
 ];
 
 export default function SkinMetricsInput({ label, value, onChange }: Props) {
@@ -47,10 +47,9 @@ export default function SkinMetricsInput({ label, value, onChange }: Props) {
               </Box>
               <Slider
                 value={value[key]}
-                min={1}
-                max={10}
+                min={0}
+                max={100}
                 step={1}
-                marks
                 onChange={handleChange(key)}
                 sx={{
                   color: color,

@@ -32,12 +32,14 @@ export default function Dashboard() {
   return (
     <Box>
       {/* ヘッダー */}
-      <Box display="flex" flexWrap="wrap" alignItems="center" gap={2} mb={3}>
-        <Typography variant="h5" fontWeight={700} flex={1}>
+      <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1} mb={3}>
+        <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>
           ダッシュボード
         </Typography>
-        <PeriodSelector value={period} onChange={setPeriod} />
-        <SnsExportButton targetRef={exportRef} filename="skin-journal-dashboard" />
+        <Box display="flex" gap={1} alignItems="center">
+          <PeriodSelector value={period} onChange={setPeriod} />
+          <SnsExportButton targetRef={exportRef} filename="skin-journal-dashboard" />
+        </Box>
       </Box>
 
       {error && (

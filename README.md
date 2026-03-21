@@ -8,7 +8,7 @@
 |---|---|
 | Frontend | React + Vite + TypeScript + MUI + Recharts |
 | Backend | Node.js + Express + TypeScript + Winston |
-| データ | Google Sheets API |
+| データ | ローカル CSV（`packages/backend/data/skin_data.csv`） |
 | リモートアクセス | Tailscale |
 | プロセス管理 | pm2 |
 
@@ -40,12 +40,14 @@ SkinJournal/
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   ├── .env.example             # 環境変数テンプレート
+│   │   ├── data/
+│   │   │   └── skin_data.csv        # 肌データ（自動生成・追記）
 │   │   └── src/
 │   │       ├── index.ts             # エントリーポイント（Express起動）
 │   │       ├── types/
 │   │       │   └── index.ts         # 全型定義（SkinMetrics, NormalizedRecord など）
 │   │       ├── repository/
-│   │       │   └── GSheetLoader.ts  # Repository層: Google Sheets API 通信
+│   │       │   └── CsvRepository.ts # Repository層: ローカル CSV 読み書き
 │   │       ├── domain/
 │   │       │   └── DataProcessor.ts # Domain層: 正規化・3種データセット生成
 │   │       ├── orchestration/
@@ -94,40 +96,35 @@ SkinJournal/
 npm install
 ```
 
-### 2. Google Cloud 設定
-
-1. Google Cloud Console で Sheets API を有効化
-2. サービスアカウントを作成し、`credentials.json` をダウンロード
-3. `packages/backend/` に `credentials.json` を配置
-4. 対象スプレッドシートをサービスアカウントのメールアドレスと共有
-
-### 3. 環境変数の設定
+### 2. 環境変数の設定（任意）
 
 ```bash
 cp packages/backend/.env.example packages/backend/.env
-# .env を編集して SPREADSHEET_ID などを設定
+# 化粧品マスタや保存先ディレクトリをカスタマイズする場合のみ編集
 ```
 
-### 4. スプレッドシートの列構成
+> データは初回起動時に `packages/backend/data/skin_data.csv` へ自動生成されます。
 
-| 列 | 内容 |
+### 3. CSV のカラム構成
+
+| カラム名 | 内容 |
 |---|---|
-| A | タイムスタンプ |
-| B | おでこ・白さ |
-| C | おでこ・水分 |
-| D | おでこ・油分 |
-| E | おでこ・弾力 |
-| F | ほお・白さ |
-| G | ほお・水分 |
-| H | ほお・油分 |
-| I | ほお・弾力 |
-| J | 化粧水 |
-| K | 美容液 |
-| L | 乳液 |
-| M | 出張（TRUE/FALSE） |
-| N | 飲酒（TRUE/FALSE） |
-| O | 睡眠時間 |
-| P | メモ |
+| timestamp | 記録日時（ISO 8601） |
+| foreheadTone | おでこ・白さ（1〜10） |
+| foreheadMoisture | おでこ・水分（1〜10） |
+| foreheadOil | おでこ・油分（1〜10） |
+| foreheadElasticity | おでこ・弾力（1〜10） |
+| cheekTone | ほお・白さ（1〜10） |
+| cheekMoisture | ほお・水分（1〜10） |
+| cheekOil | ほお・油分（1〜10） |
+| cheekElasticity | ほお・弾力（1〜10） |
+| toner | 化粧水 |
+| essence | 美容液 |
+| lotion | 乳液 |
+| businessTrip | 出張（TRUE/FALSE） |
+| alcohol | 飲酒（TRUE/FALSE） |
+| sleepHours | 睡眠時間（時間） |
+| notes | メモ |
 
 ## 開発環境の起動
 
@@ -157,10 +154,13 @@ pm2 logs skin-journal-backend
 
 | メソッド | パス | 説明 |
 |---|---|---|
+| メソッド | パス | 説明 |
+|---|---|---|
 | GET | `/api/records?period=week\|month\|all` | 正規化済みレコード一覧 |
 | GET | `/api/datasets` | 3種データセット |
 | GET | `/api/latest` | 最新レコードと平均スコア |
-| POST | `/api/entry` | 新規エントリ保存 |
+| POST | `/api/entry` | 新規エントリ保存（CSV追記） |
+| GET | `/api/export/csv` | CSV ファイルダウンロード |
 | GET | `/api/cosmetics-master` | 化粧品マスタ |
 | GET | `/health` | ヘルスチェック |
 

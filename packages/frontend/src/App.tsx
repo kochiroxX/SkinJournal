@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import InputForm from './components/InputForm';
 import DataTable from './components/DataTable';
+import CosmeticsMasterEditor from './components/CosmeticsMasterEditor';
 
 const theme = createTheme({
   palette: {
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/input" element={<InputForm />} />
             <Route path="/data" element={<DataTable />} />
+            <Route path="/settings" element={<CosmeticsMasterEditor />} />
           </Routes>
         </Layout>
       </BrowserRouter>

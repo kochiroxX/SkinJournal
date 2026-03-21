@@ -14,6 +14,7 @@ import {
   Grid,
   Snackbar,
   Alert,
+  TextField,
   Typography,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
@@ -24,11 +25,15 @@ import { useCosmeticsMaster, submitEntry } from '../../hooks/useSkinData';
 import { SkinEntryInput, SkinMetrics, CosmeticsUsed, ExternalFactors } from '../../types';
 
 const DEFAULT_METRICS: SkinMetrics = {
-  tone: 5,
-  moisture: 5,
-  oil: 5,
-  elasticity: 5,
+  tone: 50,
+  moisture: 50,
+  oil: 50,
+  elasticity: 50,
 };
+
+function todayString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 const DEFAULT_COSMETICS: CosmeticsUsed = {
   toner: '',
@@ -46,6 +51,7 @@ const DEFAULT_FACTORS: ExternalFactors = {
 export default function InputForm() {
   const { master } = useCosmeticsMaster();
 
+  const [recordDate, setRecordDate] = useState(todayString());
   const [forehead, setForehead] = useState<SkinMetrics>({ ...DEFAULT_METRICS });
   const [cheek, setCheek] = useState<SkinMetrics>({ ...DEFAULT_METRICS });
   const [cosmetics, setCosmetics] = useState<CosmeticsUsed>({ ...DEFAULT_COSMETICS });
@@ -61,10 +67,11 @@ export default function InputForm() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const entry: SkinEntryInput = { forehead, cheek, cosmetics, factors };
+      const entry: SkinEntryInput = { forehead, cheek, cosmetics, factors, date: recordDate };
       await submitEntry(entry);
 
       // リセット
+      setRecordDate(todayString());
       setForehead({ ...DEFAULT_METRICS });
       setCheek({ ...DEFAULT_METRICS });
       setCosmetics({ ...DEFAULT_COSMETICS });
@@ -88,10 +95,23 @@ export default function InputForm() {
         肌状態の記録
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        本日の肌状態をスライダーで入力してください（1〜10スケール）
+        肌状態をスライダーで入力してください（0〜100スケール）
       </Typography>
 
       <Grid container spacing={3}>
+        {/* 記録日 */}
+        <Grid item xs={12}>
+          <TextField
+            type="date"
+            label="記録日"
+            value={recordDate}
+            onChange={(e) => setRecordDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+            sx={{ width: 200 }}
+          />
+        </Grid>
+
         {/* おでこ */}
         <Grid item xs={12} md={6}>
           <Card elevation={2}>
