@@ -68,7 +68,7 @@ export default function Dashboard() {
                   { label: 'ほお 弾性力', value: latestRecord.cheek.elasticity },
                 ].map(({ label, value }) => (
                   <Grid item xs={6} sm={3} key={label}>
-                    <Card elevation={2} sx={{ textAlign: 'center', py: 1 }}>
+                    <Card elevation={0} sx={{ textAlign: 'center', py: 1 }}>
                       <CardContent>
                         <Typography variant="caption" color="text.secondary">
                           {label}
@@ -92,7 +92,7 @@ export default function Dashboard() {
 
             {/* グラフタブ */}
             <Grid item xs={12}>
-              <Card elevation={2}>
+              <Card elevation={0}>
                 <CardContent>
                   <Tabs
                     value={tab}
