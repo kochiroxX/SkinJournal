@@ -15,7 +15,7 @@
 ## アーキテクチャ（4層構造）
 
 ```
-Repository層 (GSheetLoader)      ← Google Sheets との通信
+Repository層 (CsvRepository)     ← ローカル CSV ファイルの読み書き
     ↓
 Domain層 (DataProcessor)         ← データ正規化・3種データセット生成
     ↓
@@ -84,8 +84,10 @@ SkinJournal/
 │               │   ├── SkinRadarChart.tsx       # レーダーチャート（最新肌状態）
 │               │   ├── PeriodSelector.tsx       # 期間トグル（週/月/全期間）
 │               │   └── SnsExportButton.tsx      # SNS用画像書き出し
-│               └── DataTable/       # PBI-02: データテーブルビュー
-│                   └── index.tsx    # 正規化済みデータ一覧・データセット概要
+│               ├── DataTable/       # PBI-02: データテーブルビュー
+│               │   └── index.tsx    # 正規化済みデータ一覧・データセット概要
+│               └── CosmeticsMasterEditor/  # 化粧品マスタ編集画面（/settings）
+│                   └── index.tsx    # メーカー・品名・使用期間管理
 ```
 
 ## セットアップ
@@ -110,14 +112,14 @@ cp packages/backend/.env.example packages/backend/.env
 | カラム名 | 内容 |
 |---|---|
 | timestamp | 記録日時（ISO 8601） |
-| foreheadTone | おでこ・白さ（1〜10） |
-| foreheadMoisture | おでこ・水分（1〜10） |
-| foreheadOil | おでこ・油分（1〜10） |
-| foreheadElasticity | おでこ・弾力（1〜10） |
-| cheekTone | ほお・白さ（1〜10） |
-| cheekMoisture | ほお・水分（1〜10） |
-| cheekOil | ほお・油分（1〜10） |
-| cheekElasticity | ほお・弾力（1〜10） |
+| foreheadTone | おでこ・肌色（0〜100） |
+| foreheadMoisture | おでこ・水分量（0〜100） |
+| foreheadOil | おでこ・油分量（0〜100） |
+| foreheadElasticity | おでこ・弾性力（0〜100） |
+| cheekTone | ほお・肌色（0〜100） |
+| cheekMoisture | ほお・水分量（0〜100） |
+| cheekOil | ほお・油分量（0〜100） |
+| cheekElasticity | ほお・弾性力（0〜100） |
 | toner | 化粧水 |
 | essence | 美容液 |
 | lotion | 乳液 |
@@ -138,22 +140,72 @@ npm run dev
 
 ## 本番環境（Mac mini + pm2）
 
+### 1. ビルドと起動
+
 ```bash
-# ビルド
+# フロントをビルドしてバックエンドの public/ に出力
 npm run build
 
-# pm2 で起動
+# ecosystem.config.cjs の cwd をMac miniの絶対パスに変更してから起動
 pm2 start ecosystem.config.cjs
 
 # 起動確認
 pm2 status
-pm2 logs skin-journal-backend
 ```
+
+### 2. Mac mini 再起動後の自動起動設定
+
+```bash
+# 初回のみ実行（表示されるコマンドをコピーして実行）
+pm2 startup
+
+# 現在の起動プロセスを保存
+pm2 save
+```
+
+### 3. pm2 運用コマンド
+
+```bash
+pm2 status                          # プロセス一覧・状態確認
+pm2 logs skin-journal-backend       # リアルタイムログ表示
+pm2 logs skin-journal-backend --lines 100  # 直近100行のログ表示
+pm2 restart skin-journal-backend    # 再起動
+pm2 stop skin-journal-backend       # 停止
+pm2 delete skin-journal-backend     # プロセス削除
+```
+
+## Tailscale 経由のリモートアクセス
+
+### セットアップ
+
+1. **Mac mini 側**: [Tailscale](https://tailscale.com/download) をインストールしてログイン
+2. **スマホ・PC 側**: 同じ Tailscaleアカウントでログイン
+3. Tailscale 管理画面（admin.tailscale.com）で Mac mini の IP アドレスを確認
+
+### .env の設定
+
+```bash
+cp packages/backend/.env.example packages/backend/.env
+```
+
+`packages/backend/.env` を編集し、`CORS_ORIGIN` に Tailscale IP を追加:
+
+```env
+CORS_ORIGIN=http://localhost:5173,http://100.x.x.x:3001
+```
+
+または `ecosystem.config.cjs` の `env.CORS_ORIGIN` を直接編集してください。
+
+### アクセス
+
+```
+http://<Tailscale-IP>:3001
+```
+
+> 例: `http://100.64.0.1:3001`
 
 ## API エンドポイント
 
-| メソッド | パス | 説明 |
-|---|---|---|
 | メソッド | パス | 説明 |
 |---|---|---|
 | GET | `/api/records?period=week\|month\|all` | 正規化済みレコード一覧 |
@@ -161,10 +213,11 @@ pm2 logs skin-journal-backend
 | GET | `/api/latest` | 最新レコードと平均スコア |
 | POST | `/api/entry` | 新規エントリ保存（CSV追記） |
 | GET | `/api/export/csv` | CSV ファイルダウンロード |
-| GET | `/api/cosmetics-master` | 化粧品マスタ |
+| GET | `/api/cosmetics-master` | 化粧品マスタ取得 |
+| PUT | `/api/cosmetics-master` | 化粧品マスタ更新 |
 | GET | `/health` | ヘルスチェック |
 
 ## Git 運用ルール
 
-- Branch: `feature/pbi-XX-description` → Develop → Main
+- Branch: `Koichiro/Milestone_X_description` → Main
 - Commit prefix: `[Add]` `[Fix]` `[Update]` `[Docs]`
