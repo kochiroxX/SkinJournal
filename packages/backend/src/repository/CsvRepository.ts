@@ -24,6 +24,50 @@ function escapeField(value: string | number | boolean): string {
   return str;
 }
 
+// [Refactor] PBI-19: appendRow と updateRow で同一のフィールドマッピングが重複していたため
+// ヘルパー関数として抽出。変換ロジックをここに一元化する。
+function entryToFields(timestamp: string, entry: SkinEntryInput): (string | number | boolean)[] {
+  return [
+    timestamp,
+    entry.forehead.tone,
+    entry.forehead.moisture,
+    entry.forehead.oil,
+    entry.forehead.elasticity,
+    entry.cheek.tone,
+    entry.cheek.moisture,
+    entry.cheek.oil,
+    entry.cheek.elasticity,
+    entry.cosmetics.toner,
+    entry.cosmetics.essence,
+    entry.cosmetics.lotion,
+    entry.factors.businessTrip ? 'TRUE' : 'FALSE',
+    entry.factors.alcohol ? 'TRUE' : 'FALSE',
+    entry.factors.sleepHours,
+    entry.factors.notes,
+  ];
+}
+
+function entryToRawRow(timestamp: string, entry: SkinEntryInput): RawSheetRow {
+  return {
+    timestamp,
+    foreheadTone:       String(entry.forehead.tone),
+    foreheadMoisture:   String(entry.forehead.moisture),
+    foreheadOil:        String(entry.forehead.oil),
+    foreheadElasticity: String(entry.forehead.elasticity),
+    cheekTone:          String(entry.cheek.tone),
+    cheekMoisture:      String(entry.cheek.moisture),
+    cheekOil:           String(entry.cheek.oil),
+    cheekElasticity:    String(entry.cheek.elasticity),
+    toner:              entry.cosmetics.toner,
+    essence:            entry.cosmetics.essence,
+    lotion:             entry.cosmetics.lotion,
+    businessTrip:       entry.factors.businessTrip ? 'TRUE' : 'FALSE',
+    alcohol:            entry.factors.alcohol ? 'TRUE' : 'FALSE',
+    sleepHours:         String(entry.factors.sleepHours),
+    notes:              entry.factors.notes,
+  };
+}
+
 export class CsvRepository {
   private csvPath: string;
 
@@ -80,25 +124,8 @@ export class CsvRepository {
     const timestamp = entry.date
       ? `${entry.date}T00:00:00.000`
       : new Date().toISOString();
-    const fields = [
-      timestamp,
-      entry.forehead.tone,
-      entry.forehead.moisture,
-      entry.forehead.oil,
-      entry.forehead.elasticity,
-      entry.cheek.tone,
-      entry.cheek.moisture,
-      entry.cheek.oil,
-      entry.cheek.elasticity,
-      entry.cosmetics.toner,
-      entry.cosmetics.essence,
-      entry.cosmetics.lotion,
-      entry.factors.businessTrip ? 'TRUE' : 'FALSE',
-      entry.factors.alcohol ? 'TRUE' : 'FALSE',
-      entry.factors.sleepHours,
-      entry.factors.notes,
-    ];
-
+    // [Refactor] PBI-19: entryToFields ヘルパーに委譲（updateRow との重複を排除）
+    const fields = entryToFields(timestamp, entry);
     fs.appendFileSync(this.csvPath, fields.map(escapeField).join(',') + '\n', 'utf-8');
     logger.info(`Appended new row at ${timestamp}`);
   }
@@ -110,24 +137,8 @@ export class CsvRepository {
     if (index === -1) return false;
 
     const newTimestamp = entry.date ? `${entry.date}T00:00:00.000` : timestamp;
-    const updated: RawSheetRow = {
-      timestamp: newTimestamp,
-      foreheadTone: String(entry.forehead.tone),
-      foreheadMoisture: String(entry.forehead.moisture),
-      foreheadOil: String(entry.forehead.oil),
-      foreheadElasticity: String(entry.forehead.elasticity),
-      cheekTone: String(entry.cheek.tone),
-      cheekMoisture: String(entry.cheek.moisture),
-      cheekOil: String(entry.cheek.oil),
-      cheekElasticity: String(entry.cheek.elasticity),
-      toner: entry.cosmetics.toner,
-      essence: entry.cosmetics.essence,
-      lotion: entry.cosmetics.lotion,
-      businessTrip: entry.factors.businessTrip ? 'TRUE' : 'FALSE',
-      alcohol: entry.factors.alcohol ? 'TRUE' : 'FALSE',
-      sleepHours: String(entry.factors.sleepHours),
-      notes: entry.factors.notes,
-    };
+    // [Refactor] PBI-19: entryToRawRow ヘルパーに委譲（appendRow との重複を排除）
+    const updated: RawSheetRow = entryToRawRow(newTimestamp, entry);
     rows[index] = updated;
     this.writeAllRows(rows);
     logger.info(`Updated row with timestamp: ${timestamp}`);

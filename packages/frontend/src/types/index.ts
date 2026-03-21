@@ -1,25 +1,29 @@
 // ============================================================
-// Frontend 型定義（Backend の types/index.ts と同期）
+// Frontend 型定義
+// [Sync required] Backend の packages/backend/src/types/index.ts と同期を保つこと。
+// 共有型（SkinMetrics / CosmeticsUsed / ExternalFactors / NormalizedRecord /
+//   SkinEntryInput / CosmeticItem / CosmeticsMaster / ApiResponse / PeriodFilter）
+// はどちらかを変更したら必ず両方を更新する。
 // ============================================================
 
 export interface SkinMetrics {
-  tone: number;
-  moisture: number;
-  oil: number;
-  elasticity: number;
+  tone: number;       // 肌色（0〜100）
+  moisture: number;   // 水分量（0〜100）
+  oil: number;        // 油分量（0〜100）
+  elasticity: number; // 弾性力（0〜100）
 }
 
 export interface CosmeticsUsed {
-  toner: string;
-  essence: string;
-  lotion: string;
+  toner: string;    // 化粧水
+  essence: string;  // 美容液
+  lotion: string;   // 乳液
 }
 
 export interface ExternalFactors {
-  businessTrip: boolean;
-  alcohol: boolean;
-  sleepHours: number;
-  notes: string;
+  businessTrip: boolean; // 出張
+  alcohol: boolean;      // 飲酒
+  sleepHours: number;    // 睡眠時間
+  notes: string;         // その他メモ
 }
 
 export interface NormalizedRecord {
@@ -61,7 +65,7 @@ export interface CosmeticsMaster {
   lotions: CosmeticItem[];
 }
 
-/** アイテムを "メーカー / 品名" 形式にフォーマット（CSVに保存する値） */
+/** アイテムを "メーカー / 品名" 形式にフォーマット（CSV に保存する値） */
 export function formatItemValue(item: CosmeticItem): string {
   return item.maker ? `${item.maker} / ${item.name}` : item.name;
 }
@@ -75,23 +79,6 @@ export interface ApiResponse<T> {
 export type PeriodFilter = 'week' | 'month' | 'all';
 export type AnalysisType = 'trend' | 'comparison' | 'correlation';
 
-/** Recharts レーダーチャート用データ型 */
-export interface RadarDataPoint {
-  metric: string;
-  forehead: number;
-  cheek: number;
-  fullMark: number;
-}
-
-/** Recharts 推移グラフ用データ型 */
-export interface TrendDataPoint {
-  date: string;
-  foreheadTone: number;
-  foreheadMoisture: number;
-  foreheadOil: number;
-  foreheadElasticity: number;
-  cheekTone: number;
-  cheekMoisture: number;
-  cheekOil: number;
-  cheekElasticity: number;
-}
+// [Refactor] PBI-20: RadarDataPoint / TrendDataPoint は Recharts 固有の型であり
+// ドメイン型とは無関係。各チャートコンポーネントのローカル型に移動した。
+// （SkinRadarChart.tsx / TrendChart.tsx 内で定義）

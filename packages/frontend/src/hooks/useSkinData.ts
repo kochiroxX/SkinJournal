@@ -1,13 +1,18 @@
+// ============================================================
+// 肌データ取得・操作フック
+// ============================================================
+
+// [Refactor] PBI-17: 各関数の fetch を lib/api.ts に委譲し、
+// Content-Type 設定・レスポンス検証・エラー処理の重複を排除した。
+
 import { useState, useEffect, useCallback } from 'react';
 import {
   NormalizedRecord,
   CosmeticsMaster,
   SkinEntryInput,
   PeriodFilter,
-  ApiResponse,
 } from '../types';
-
-const API_BASE = '/api';
+import { api } from '../lib/api';
 
 export function useSkinData(period: PeriodFilter = 'all') {
   const [records, setRecords] = useState<NormalizedRecord[]>([]);
@@ -18,15 +23,10 @@ export function useSkinData(period: PeriodFilter = 'all') {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/records?period=${period}`);
-      const json: ApiResponse<NormalizedRecord[]> = await res.json();
-      if (json.success && json.data) {
-        setRecords(json.data);
-      } else {
-        setError(json.error ?? 'データ取得エラー');
-      }
-    } catch {
-      setError('サーバーに接続できませんでした');
+      const data = await api.get<NormalizedRecord[]>(`/records?period=${period}`);
+      setRecords(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'データ取得エラー');
     } finally {
       setLoading(false);
     }
@@ -49,11 +49,9 @@ export function useCosmeticsMaster() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE}/cosmetics-master`)
-      .then((res) => res.json())
-      .then((json: ApiResponse<CosmeticsMaster>) => {
-        if (json.success && json.data) setMaster(json.data);
-      })
+    api
+      .get<CosmeticsMaster>('/cosmetics-master')
+      .then(setMaster)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -62,29 +60,13 @@ export function useCosmeticsMaster() {
 }
 
 export async function submitEntry(entry: SkinEntryInput): Promise<void> {
-  const res = await fetch(`${API_BASE}/entry`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(entry),
-  });
-  const json: ApiResponse<null> = await res.json();
-  if (!json.success) throw new Error(json.error ?? '保存に失敗しました');
+  await api.post<null>('/entry', entry);
 }
 
 export async function updateRecord(timestamp: string, entry: SkinEntryInput): Promise<void> {
-  const res = await fetch(`${API_BASE}/records/${encodeURIComponent(timestamp)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(entry),
-  });
-  const json: ApiResponse<null> = await res.json();
-  if (!json.success) throw new Error(json.error ?? '更新に失敗しました');
+  await api.put<null>(`/records/${encodeURIComponent(timestamp)}`, entry);
 }
 
 export async function deleteRecord(timestamp: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/records/${encodeURIComponent(timestamp)}`, {
-    method: 'DELETE',
-  });
-  const json: ApiResponse<null> = await res.json();
-  if (!json.success) throw new Error(json.error ?? '削除に失敗しました');
+  await api.delete<null>(`/records/${encodeURIComponent(timestamp)}`);
 }

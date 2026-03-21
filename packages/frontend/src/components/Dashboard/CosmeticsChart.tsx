@@ -5,18 +5,23 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { useState } from 'react';
 import { NormalizedRecord } from '../../types';
-import { SCALE_MAX, METRIC_LABELS, METRIC_COLORS } from '../../constants';
+import { SCALE_MAX, METRIC_LABELS, METRIC_COLORS, COSMETIC_FIELD_LABELS } from '../../constants';
+// [Refactor] PBI-14: 共有コンポーネントを使用
+import EmptyStateBox from '../shared/EmptyStateBox';
+// [Refactor] PBI-15: FilterToggleGroup を使用（ローカルの ToggleButtonGroup 実装を置き換え）
+import FilterToggleGroup from '../shared/FilterToggleGroup';
 
 type CosmeticField = 'toner' | 'essence' | 'lotion';
 type AreaFilter = 'forehead' | 'cheek';
 
-const FIELD_LABELS: Record<CosmeticField, string> = {
-  toner: '化粧水',
-  essence: '美容液',
-  lotion: '乳液',
+// [Refactor] PBI-15: FIELD_LABELS は constants.ts の COSMETIC_FIELD_LABELS に移動済み
+
+const AREA_LABELS: Record<AreaFilter, string> = {
+  forehead: 'おでこ',
+  cheek: 'ほお',
 };
 
 function buildChartData(records: NormalizedRecord[], field: CosmeticField, area: AreaFilter) {
@@ -53,31 +58,16 @@ export default function CosmeticsChart({ records }: Props) {
   const data = buildChartData(records, field, area);
 
   if (data.length === 0) {
-    return (
-      <Box display="flex" alignItems="center" justifyContent="center" height={300}>
-        <Typography color="text.secondary">データが不足しています（化粧品を記録してください）</Typography>
-      </Box>
-    );
+    // [Refactor] PBI-14: EmptyStateBox を使用
+    return <EmptyStateBox message="データが不足しています（化粧品を記録してください）" />;
   }
 
   return (
     <Box>
       <Box display="flex" gap={2} flexWrap="wrap" mb={2}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography variant="body2" color="text.secondary">カテゴリ:</Typography>
-          <ToggleButtonGroup value={field} exclusive onChange={(_, v) => v && setField(v)} size="small">
-            {(Object.entries(FIELD_LABELS) as [CosmeticField, string][]).map(([k, l]) => (
-              <ToggleButton key={k} value={k}>{l}</ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography variant="body2" color="text.secondary">部位:</Typography>
-          <ToggleButtonGroup value={area} exclusive onChange={(_, v) => v && setArea(v)} size="small">
-            <ToggleButton value="forehead">おでこ</ToggleButton>
-            <ToggleButton value="cheek">ほお</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+        {/* [Refactor] PBI-15: FilterToggleGroup を使用 */}
+        <FilterToggleGroup label="カテゴリ" options={COSMETIC_FIELD_LABELS} value={field} onChange={setField} />
+        <FilterToggleGroup label="部位" options={AREA_LABELS} value={area} onChange={setArea} />
       </Box>
 
       <ResponsiveContainer width="100%" height={320}>

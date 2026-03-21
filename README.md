@@ -53,7 +53,8 @@ SkinJournal/
 │   │       ├── orchestration/
 │   │       │   └── AppController.ts # Orchestration層: API ルーティング
 │   │       └── utils/
-│   │           └── logger.ts        # Winston ロガー
+│   │           ├── logger.ts        # Winston ロガー
+│   │           └── asyncHandler.ts  # async ルートラッパー（エラーハンドリング共通化）
 │   │
 │   └── frontend/                    # React + Vite + MUI
 │       ├── package.json
@@ -66,26 +67,43 @@ SkinJournal/
 │       └── src/
 │           ├── main.tsx             # エントリーポイント
 │           ├── App.tsx              # MUIテーマ・ルーティング定義
+│           ├── constants.ts         # スケール・ラベル・カラー等の共通定数
 │           ├── types/
-│           │   └── index.ts         # Frontend 型定義
+│           │   └── index.ts         # Frontend 型定義（Backend と同期）
 │           ├── hooks/
-│           │   └── useSkinData.ts   # データ取得・送信カスタムフック
+│           │   ├── useSkinData.ts   # データ取得・送信カスタムフック
+│           │   └── useSnackbar.tsx  # Snackbar 通知フック（共通化）
+│           ├── lib/
+│           │   └── api.ts           # fetch ラッパー（APIクライアント一元化）
+│           ├── utils/
+│           │   ├── format.ts        # 日付フォーマット関数
+│           │   └── metrics.ts       # 肌指標の集計・グループ化関数
 │           └── components/
 │               ├── Layout/
 │               │   └── index.tsx    # レスポンシブレイアウト（Drawer + AppBar）
+│               ├── shared/          # 複数画面で使い回す共有コンポーネント
+│               │   ├── EmptyStateBox.tsx    # データなし表示
+│               │   ├── LoadingBox.tsx       # ローディングインジケーター
+│               │   ├── PageHeader.tsx       # ページタイトル＋右揃えアクション
+│               │   ├── ScoreChip.tsx        # スコア表示チップ（色分け）
+│               │   ├── ConfirmDialog.tsx    # 削除確認ダイアログ
+│               │   ├── FilterToggleGroup.tsx # 汎用ラベルトグルグループ
+│               │   └── MetricSliderGroup.tsx # 肌指標スライダー（full/compact）
 │               ├── InputForm/       # PBI-01: 高機能入力フォーム
 │               │   ├── index.tsx    # フォーム全体・送信ロジック
-│               │   ├── SkinMetricsInput.tsx   # 肌指標スライダー
+│               │   ├── SkinMetricsInput.tsx   # 肌指標スライダー（MetricSliderGroup をラップ）
 │               │   ├── CosmeticsSelector.tsx  # 化粧品マスタ選択
 │               │   └── ExternalFactorsInput.tsx # ライフログ入力
 │               ├── Dashboard/       # PBI-03: インタラクティブ・ダッシュボード
 │               │   ├── index.tsx    # サマリーカード・タブ切り替え
 │               │   ├── TrendChart.tsx          # 推移グラフ（Recharts）
 │               │   ├── SkinRadarChart.tsx       # レーダーチャート（最新肌状態）
+│               │   ├── CosmeticsChart.tsx       # 化粧品別平均スコア比較
+│               │   ├── FactorsChart.tsx         # 外部要因と肌状態の相関グラフ
 │               │   ├── PeriodSelector.tsx       # 期間トグル（週/月/全期間）
 │               │   └── SnsExportButton.tsx      # SNS用画像書き出し
 │               ├── DataTable/       # PBI-02: データテーブルビュー
-│               │   └── index.tsx    # 正規化済みデータ一覧・データセット概要
+│               │   └── index.tsx    # 正規化済みデータ一覧・編集・削除
 │               └── CosmeticsMasterEditor/  # 化粧品マスタ編集画面（/settings）
 │                   └── index.tsx    # メーカー・品名・使用期間管理
 ```
@@ -212,6 +230,8 @@ http://<Tailscale-IP>:3001
 | GET | `/api/datasets` | 3種データセット |
 | GET | `/api/latest` | 最新レコードと平均スコア |
 | POST | `/api/entry` | 新規エントリ保存（CSV追記） |
+| PUT | `/api/records/:id` | レコード更新（:id は encodeURIComponent(timestamp)） |
+| DELETE | `/api/records/:id` | レコード削除 |
 | GET | `/api/export/csv` | CSV ファイルダウンロード |
 | GET | `/api/cosmetics-master` | 化粧品マスタ取得 |
 | PUT | `/api/cosmetics-master` | 化粧品マスタ更新 |

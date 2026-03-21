@@ -2,12 +2,17 @@
 // 肌マネジメント・システム - 型定義
 // ============================================================
 
-/** 肌指標（1〜10スケール） */
+// ============================================================
+// [Sync required] Frontend の packages/frontend/src/types/index.ts と同期を保つこと。
+// 共有型を変更する場合は必ず両方のファイルを同時に更新する。
+// ============================================================
+
+/** 肌指標（0〜100スケール） */
 export interface SkinMetrics {
-  tone: number;       // 白さ
-  moisture: number;   // 水分
-  oil: number;        // 油分
-  elasticity: number; // 弾力
+  tone: number;       // 肌色
+  moisture: number;   // 水分量
+  oil: number;        // 油分量
+  elasticity: number; // 弾性力
 }
 
 /** 使用化粧品 */
