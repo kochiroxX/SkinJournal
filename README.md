@@ -24,6 +24,68 @@ Orchestration層 (AppController)  ← API ルーティング
 Presentation層 (React + MUI)     ← UI / ダッシュボード
 ```
 
+## ファイル構成
+
+```
+SkinJournal/
+├── package.json                     # モノレポルート（npm workspaces）
+├── .eslintrc.js                     # ESLint 設定
+├── .prettierrc                      # Prettier 設定
+├── .gitignore
+├── ecosystem.config.cjs             # pm2 設定（Mac mini 本番環境）
+├── README.md
+│
+├── packages/
+│   ├── backend/                     # Node.js + Express サーバー
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── .env.example             # 環境変数テンプレート
+│   │   └── src/
+│   │       ├── index.ts             # エントリーポイント（Express起動）
+│   │       ├── types/
+│   │       │   └── index.ts         # 全型定義（SkinMetrics, NormalizedRecord など）
+│   │       ├── repository/
+│   │       │   └── GSheetLoader.ts  # Repository層: Google Sheets API 通信
+│   │       ├── domain/
+│   │       │   └── DataProcessor.ts # Domain層: 正規化・3種データセット生成
+│   │       ├── orchestration/
+│   │       │   └── AppController.ts # Orchestration層: API ルーティング
+│   │       └── utils/
+│   │           └── logger.ts        # Winston ロガー
+│   │
+│   └── frontend/                    # React + Vite + MUI
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── tsconfig.node.json
+│       ├── vite.config.ts           # Vite設定（APIプロキシ・コードスプリット）
+│       ├── index.html
+│       ├── public/
+│       │   └── favicon.svg
+│       └── src/
+│           ├── main.tsx             # エントリーポイント
+│           ├── App.tsx              # MUIテーマ・ルーティング定義
+│           ├── types/
+│           │   └── index.ts         # Frontend 型定義
+│           ├── hooks/
+│           │   └── useSkinData.ts   # データ取得・送信カスタムフック
+│           └── components/
+│               ├── Layout/
+│               │   └── index.tsx    # レスポンシブレイアウト（Drawer + AppBar）
+│               ├── InputForm/       # PBI-01: 高機能入力フォーム
+│               │   ├── index.tsx    # フォーム全体・送信ロジック
+│               │   ├── SkinMetricsInput.tsx   # 肌指標スライダー
+│               │   ├── CosmeticsSelector.tsx  # 化粧品マスタ選択
+│               │   └── ExternalFactorsInput.tsx # ライフログ入力
+│               ├── Dashboard/       # PBI-03: インタラクティブ・ダッシュボード
+│               │   ├── index.tsx    # サマリーカード・タブ切り替え
+│               │   ├── TrendChart.tsx          # 推移グラフ（Recharts）
+│               │   ├── SkinRadarChart.tsx       # レーダーチャート（最新肌状態）
+│               │   ├── PeriodSelector.tsx       # 期間トグル（週/月/全期間）
+│               │   └── SnsExportButton.tsx      # SNS用画像書き出し
+│               └── DataTable/       # PBI-02: データテーブルビュー
+│                   └── index.tsx    # 正規化済みデータ一覧・データセット概要
+```
+
 ## セットアップ
 
 ### 1. 依存関係のインストール
