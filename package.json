@@ -1,0 +1,24 @@
+{
+  "name": "skin-journal",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/frontend",
+    "packages/backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=packages/backend\" \"npm run dev --workspace=packages/frontend\"",
+    "build": "npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
+    "lint": "npm run lint --workspace=packages/frontend && npm run lint --workspace=packages/backend",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,json}\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  }
+}

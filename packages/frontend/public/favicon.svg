@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="45" fill="#e91e63" opacity="0.15"/>
+  <circle cx="50" cy="50" r="32" fill="#e91e63" opacity="0.4"/>
+  <circle cx="50" cy="50" r="18" fill="#e91e63"/>
+  <text x="50" y="57" text-anchor="middle" font-size="20" fill="white" font-family="sans-serif">✦</text>
+</svg>
