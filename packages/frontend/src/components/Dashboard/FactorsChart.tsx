@@ -6,20 +6,26 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   ScatterChart, Scatter, ZAxis,
 } from 'recharts';
-import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { useState } from 'react';
 import { NormalizedRecord } from '../../types';
-import { SCALE_MAX, METRIC_LABELS, METRIC_COLORS } from '../../constants';
+import { SCALE_MAX, METRIC_LABELS, METRIC_COLORS, FACTOR_MODE_LABELS } from '../../constants';
+// [Refactor] PBI-14: 共有コンポーネントを使用
+import EmptyStateBox from '../shared/EmptyStateBox';
+// [Refactor] PBI-15: FilterToggleGroup を使用（ローカルの ToggleButtonGroup 実装を置き換え）
+import FilterToggleGroup from '../shared/FilterToggleGroup';
+// [Refactor] PBI-18: avgMetrics を utils/metrics.ts に委譲
+import { avgMetrics } from '../../utils/metrics';
 
 type AreaFilter = 'forehead' | 'cheek';
 
-function avgMetrics(records: NormalizedRecord[], area: AreaFilter) {
-  if (records.length === 0) return { tone: 0, moisture: 0, oil: 0, elasticity: 0 };
-  const keys = ['tone', 'moisture', 'oil', 'elasticity'] as const;
-  return Object.fromEntries(
-    keys.map((k) => [k, parseFloat((records.reduce((s, r) => s + r[area][k], 0) / records.length).toFixed(1))])
-  ) as { tone: number; moisture: number; oil: number; elasticity: number };
-}
+// [Refactor] PBI-15: MODE_LABELS は constants.ts の FACTOR_MODE_LABELS に移動済み
+// [Refactor] PBI-18: avgMetrics はローカル定義から utils/metrics.ts のものを使用するため削除
+
+const AREA_LABELS: Record<AreaFilter, string> = {
+  forehead: 'おでこ',
+  cheek: 'ほお',
+};
 
 // 飲酒・出張あり/なしで平均スコアを比較
 function buildBoolData(records: NormalizedRecord[], factor: 'alcohol' | 'businessTrip', area: AreaFilter) {
@@ -51,12 +57,6 @@ interface Props {
 
 type FactorMode = 'sleep' | 'alcohol' | 'businessTrip';
 
-const MODE_LABELS: Record<FactorMode, string> = {
-  sleep: '睡眠時間',
-  alcohol: '飲酒',
-  businessTrip: '出張',
-};
-
 export default function FactorsChart({ records }: Props) {
   const [mode, setMode] = useState<FactorMode>('sleep');
   const [area, setArea] = useState<AreaFilter>('forehead');
@@ -67,31 +67,16 @@ export default function FactorsChart({ records }: Props) {
       : buildBoolData(records, mode as 'alcohol' | 'businessTrip', area);
 
   if (records.length === 0) {
-    return (
-      <Box display="flex" alignItems="center" justifyContent="center" height={300}>
-        <Typography color="text.secondary">データがありません</Typography>
-      </Box>
-    );
+    // [Refactor] PBI-14: EmptyStateBox を使用
+    return <EmptyStateBox />;
   }
 
   return (
     <Box>
       <Box display="flex" gap={2} flexWrap="wrap" mb={2}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography variant="body2" color="text.secondary">要因:</Typography>
-          <ToggleButtonGroup value={mode} exclusive onChange={(_, v) => v && setMode(v)} size="small">
-            {(Object.entries(MODE_LABELS) as [FactorMode, string][]).map(([k, l]) => (
-              <ToggleButton key={k} value={k}>{l}</ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography variant="body2" color="text.secondary">部位:</Typography>
-          <ToggleButtonGroup value={area} exclusive onChange={(_, v) => v && setArea(v)} size="small">
-            <ToggleButton value="forehead">おでこ</ToggleButton>
-            <ToggleButton value="cheek">ほお</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+        {/* [Refactor] PBI-15: FilterToggleGroup を使用 */}
+        <FilterToggleGroup label="要因" options={FACTOR_MODE_LABELS} value={mode} onChange={setMode} />
+        <FilterToggleGroup label="部位" options={AREA_LABELS} value={area} onChange={setArea} />
       </Box>
 
       <ResponsiveContainer width="100%" height={320}>

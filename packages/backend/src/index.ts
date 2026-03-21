@@ -4,7 +4,7 @@
 
 import 'dotenv/config';
 import path from 'path';
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import { AppController } from './orchestration/AppController';
 import logger from './utils/logger';
@@ -35,6 +35,13 @@ app.use(express.static(publicDir));
 // SPA フォールバック: API 以外はすべて index.html を返す
 app.get('*', (_req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));
+});
+
+// [Refactor] PBI-19: asyncHandler から next(err) で渡されたエラーを一元処理するミドルウェア。
+// 各ルートハンドラの try-catch 重複を排除するために導入。
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error('Unhandled error', err);
+  res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
 });
 
 // Start server

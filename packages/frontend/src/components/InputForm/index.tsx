@@ -12,8 +12,6 @@ import {
   CircularProgress,
   Divider,
   Grid,
-  Snackbar,
-  Alert,
   TextField,
   Typography,
 } from '@mui/material';
@@ -22,6 +20,8 @@ import SkinMetricsInput from './SkinMetricsInput';
 import CosmeticsSelector from './CosmeticsSelector';
 import ExternalFactorsInput from './ExternalFactorsInput';
 import { useCosmeticsMaster, submitEntry } from '../../hooks/useSkinData';
+// [Refactor] PBI-17: Snackbar state + JSX を useSnackbar フックに委譲
+import { useSnackbar } from '../../hooks/useSnackbar';
 import { SkinEntryInput, SkinMetrics, CosmeticsUsed, ExternalFactors } from '../../types';
 
 const DEFAULT_METRICS: SkinMetrics = {
@@ -50,6 +50,8 @@ const DEFAULT_FACTORS: ExternalFactors = {
 
 export default function InputForm() {
   const { master } = useCosmeticsMaster();
+  // [Refactor] PBI-17: Snackbar state + JSX を useSnackbar フックに委譲
+  const { showSuccess, showError, snackbarEl } = useSnackbar(4000);
 
   const [recordDate, setRecordDate] = useState(todayString());
   const [forehead, setForehead] = useState<SkinMetrics>({ ...DEFAULT_METRICS });
@@ -58,11 +60,6 @@ export default function InputForm() {
   const [factors, setFactors] = useState<ExternalFactors>({ ...DEFAULT_FACTORS });
 
   const [submitting, setSubmitting] = useState(false);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error';
-  }>({ open: false, message: '', severity: 'success' });
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -77,13 +74,9 @@ export default function InputForm() {
       setCosmetics({ ...DEFAULT_COSMETICS });
       setFactors({ ...DEFAULT_FACTORS });
 
-      setSnackbar({ open: true, message: '記録を保存しました！', severity: 'success' });
+      showSuccess('記録を保存しました！');
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : '保存に失敗しました',
-        severity: 'error',
-      });
+      showError(err instanceof Error ? err.message : '保存に失敗しました');
     } finally {
       setSubmitting(false);
     }
@@ -166,16 +159,8 @@ export default function InputForm() {
         </Grid>
       </Grid>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      {/* [Refactor] PBI-17: useSnackbar から取得した要素を配置 */}
+      {snackbarEl}
     </Box>
   );
 }

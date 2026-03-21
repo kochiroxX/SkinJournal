@@ -9,7 +9,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Alert,
   Tab,
   Tabs,
@@ -27,11 +26,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Slider,
   TextField,
   Checkbox,
   FormControlLabel,
-  Snackbar,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -40,18 +37,19 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useSkinData, updateRecord, deleteRecord } from '../../hooks/useSkinData';
 import { NormalizedRecord, SkinMetrics, SkinEntryInput } from '../../types';
-import { METRIC_LABELS, METRIC_COLORS, getScoreColor, SCALE_MAX } from '../../constants';
+import { METRIC_LABELS, METRIC_COLORS } from '../../constants';
+// [Refactor] PBI-14: 共有コンポーネントを使用
+import LoadingBox from '../shared/LoadingBox';
+import ScoreChip from '../shared/ScoreChip';
+import ConfirmDialog from '../shared/ConfirmDialog';
+// [Refactor] PBI-16: MetricSliderGroup を使用（EditDialog 内のインライン実装を置き換え）
+import MetricSliderGroup from '../shared/MetricSliderGroup';
+// [Refactor] PBI-17: useSnackbar フックを使用
+import { useSnackbar } from '../../hooks/useSnackbar';
+// [Refactor] PBI-18: 日付フォーマット関数を utils/format.ts に委譲
+import { formatDateTime } from '../../utils/format';
 
-function ScoreChip({ value }: { value: number }) {
-  return (
-    <Chip
-      label={value}
-      color={getScoreColor(value)}
-      size="small"
-      sx={{ fontWeight: 700, minWidth: 48 }}
-    />
-  );
-}
+// [Refactor] PBI-14: ScoreChip は shared/ScoreChip に移動済み。ここでは削除。
 
 function MetricsCell({ metrics }: { metrics: SkinMetrics }) {
   return (
@@ -107,33 +105,14 @@ function EditDialog({
     setSaving(false);
   };
 
-  const MetricSliders = ({
-    label, value, onChange,
-  }: { label: string; value: SkinMetrics; onChange: (m: SkinMetrics) => void }) => (
-    <Box>
-      <Typography variant="subtitle2" gutterBottom>{label}</Typography>
-      {(Object.keys(METRIC_LABELS) as Array<keyof SkinMetrics>).map((key) => (
-        <Box key={key} display="flex" alignItems="center" gap={2} mb={0.5}>
-          <Typography variant="caption" sx={{ width: 48, flexShrink: 0 }}>{METRIC_LABELS[key]}</Typography>
-          <Slider
-            value={value[key]}
-            min={0} max={SCALE_MAX} step={1}
-            onChange={(_, v) => onChange({ ...value, [key]: v as number })}
-            sx={{ color: METRIC_COLORS[key] }}
-          />
-          <Typography variant="caption" sx={{ width: 28, textAlign: 'right' }}>{value[key]}</Typography>
-        </Box>
-      ))}
-    </Box>
-  );
-
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>記録を編集</DialogTitle>
       <DialogContent dividers>
         <Box display="flex" flexDirection="column" gap={3} pt={1}>
-          <MetricSliders label="おでこ" value={forehead} onChange={setForehead} />
-          <MetricSliders label="ほお" value={cheek} onChange={setCheek} />
+          {/* [Refactor] PBI-16: MetricSliderGroup（variant="compact"）を使用 */}
+          <MetricSliderGroup label="おでこ" value={forehead} onChange={setForehead} variant="compact" />
+          <MetricSliderGroup label="ほお" value={cheek} onChange={setCheek} variant="compact" />
           <Box>
             <Typography variant="subtitle2" gutterBottom>使用化粧品</Typography>
             <Box display="flex" flexDirection="column" gap={1}>
@@ -191,9 +170,8 @@ function NormalizedTable({
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [editRecord, setEditRecord] = useState<NormalizedRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NormalizedRecord | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false, message: '', severity: 'success',
-  });
+  // [Refactor] PBI-17: useSnackbar フックに委譲
+  const { showSuccess, showError, snackbarEl } = useSnackbar();
 
   const paginated = [...records]
     .reverse()
@@ -202,22 +180,22 @@ function NormalizedTable({
   const handleSave = async (entry: SkinEntryInput) => {
     try {
       await updateRecord(editRecord!.timestamp, entry);
-      setSnackbar({ open: true, message: '更新しました', severity: 'success' });
+      showSuccess('更新しました');
       setEditRecord(null);
       onRefetch();
     } catch {
-      setSnackbar({ open: true, message: '更新に失敗しました', severity: 'error' });
+      showError('更新に失敗しました');
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteRecord(deleteTarget!.timestamp);
-      setSnackbar({ open: true, message: '削除しました', severity: 'success' });
+      showSuccess('削除しました');
       setDeleteTarget(null);
       onRefetch();
     } catch {
-      setSnackbar({ open: true, message: '削除に失敗しました', severity: 'error' });
+      showError('削除に失敗しました');
     }
   };
 
@@ -244,7 +222,8 @@ function NormalizedTable({
             {paginated.map((r) => (
               <TableRow key={r.id} hover>
                 <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>
-                  {new Date(r.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {/* [Refactor] PBI-18: formatDateTime を使用 */}
+                  {formatDateTime(r.timestamp)}
                 </TableCell>
                 <TableCell><MetricsCell metrics={r.forehead} /></TableCell>
                 <TableCell><MetricsCell metrics={r.cheek} /></TableCell>
@@ -289,28 +268,17 @@ function NormalizedTable({
         <EditDialog record={editRecord} onClose={() => setEditRecord(null)} onSave={handleSave} />
       )}
 
-      {/* 削除確認ダイアログ */}
-      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
-        <DialogTitle>記録を削除しますか？</DialogTitle>
-        <DialogContent>
-          <Typography>
-            {deleteTarget && new Date(deleteTarget.timestamp).toLocaleString('ja-JP')} の記録を削除します。この操作は元に戻せません。
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)}>キャンセル</Button>
-          <Button variant="contained" color="error" onClick={handleDelete}>削除</Button>
-        </DialogActions>
-      </Dialog>
+      {/* [Refactor] PBI-14: ConfirmDialog を使用（重複のダイアログ実装を排除） */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="記録を削除しますか？"
+        message={deleteTarget ? `${formatDateTime(deleteTarget.timestamp)} の記録を削除します。この操作は元に戻せません。` : ''}
+        onConfirm={handleDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
-      </Snackbar>
+      {/* [Refactor] PBI-17: useSnackbar から取得した要素を配置 */}
+      {snackbarEl}
     </>
   );
 }
@@ -390,7 +358,8 @@ export default function DataTable() {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {loading ? (
-        <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
+        // [Refactor] PBI-14: LoadingBox を使用
+        <LoadingBox />
       ) : (
         <Card elevation={0}>
           <CardContent>

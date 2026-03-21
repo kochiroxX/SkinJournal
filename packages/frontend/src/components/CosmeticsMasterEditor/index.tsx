@@ -4,21 +4,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Divider,
   IconButton,
-  Snackbar,
   Tab,
   Table,
   TableBody,
@@ -31,6 +23,16 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+// [Refactor] PBI-14: 共有コンポーネントを使用（CircularProgress / Snackbar / Alert / Dialog 系を削除）
+import LoadingBox from '../shared/LoadingBox';
+import PageHeader from '../shared/PageHeader';
+import ConfirmDialog from '../shared/ConfirmDialog';
+// [Refactor] PBI-17: useSnackbar フックを使用
+import { useSnackbar } from '../../hooks/useSnackbar';
+// [Refactor] PBI-17: api クライアントを使用（直接 fetch を置き換え）
+import { api } from '../../lib/api';
+// [Refactor] PBI-18: 日付フォーマット関数を utils/format.ts に委譲
+import { formatSlashDate } from '../../utils/format';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -56,10 +58,7 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-function formatDate(iso?: string): string {
-  if (!iso) return '—';
-  return iso.replace(/-/g, '/');
-}
+// [Refactor] PBI-18: formatDate は utils/format.ts の formatSlashDate に移動済み。ここでは削除。
 
 // ── アイテム追加フォーム ──────────────────────────────────────
 function AddItemForm({ onAdd }: { onAdd: (item: CosmeticItem) => void }) {
@@ -208,21 +207,13 @@ function EditableRow({
           </Tooltip>
         </TableCell>
 
-        {/* 削除確認ダイアログ */}
-        <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
-          <DialogTitle>削除の確認</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              「{item.maker ? `${item.maker} / ` : ''}{item.name}」を削除しますか？この操作は元に戻せません。
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConfirmDelete(false)}>キャンセル</Button>
-            <Button color="error" variant="contained" onClick={() => { setConfirmDelete(false); onDelete(item.id); }}>
-              削除
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {/* [Refactor] PBI-14: ConfirmDialog を使用（重複のダイアログ実装を排除） */}
+        <ConfirmDialog
+          open={confirmDelete}
+          message={`「${item.maker ? `${item.maker} / ` : ''}${item.name}」を削除しますか？この操作は元に戻せません。`}
+          onConfirm={() => { setConfirmDelete(false); onDelete(item.id); }}
+          onClose={() => setConfirmDelete(false)}
+        />
       </TableRow>
     );
   }
@@ -247,7 +238,8 @@ function EditableRow({
         </Box>
       </TableCell>
       <TableCell sx={{ fontSize: 12, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-        {formatDate(item.startDate)} 〜 {formatDate(item.endDate)}
+        {/* [Refactor] PBI-18: formatSlashDate を使用 */}
+        {formatSlashDate(item.startDate)} 〜 {formatSlashDate(item.endDate)}
       </TableCell>
       <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
         <Tooltip title="編集">
@@ -319,29 +311,26 @@ export default function CosmeticsMasterEditor() {
   const [master, setMaster] = useState<CosmeticsMaster>({ toners: [], essences: [], lotions: [] });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(0);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean; message: string; severity: 'success' | 'error';
-  }>({ open: false, message: '', severity: 'success' });
+  // [Refactor] PBI-17: Snackbar state + JSX を useSnackbar フックに委譲
+  const { showSuccess, showError, snackbarEl } = useSnackbar();
 
   useEffect(() => {
-    fetch('/api/cosmetics-master')
-      .then((r) => r.json())
-      .then((res) => { if (res.data) setMaster(res.data); })
-      .catch(() => setSnackbar({ open: true, message: 'マスタの読み込みに失敗しました', severity: 'error' }))
+    // [Refactor] PBI-17: api クライアントを使用
+    api
+      .get<CosmeticsMaster>('/cosmetics-master')
+      .then(setMaster)
+      .catch(() => showError('マスタの読み込みに失敗しました'))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const persist = async (updated: CosmeticsMaster) => {
     try {
-      const res = await fetch('/api/cosmetics-master', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      });
-      if (!res.ok) throw new Error();
-      setSnackbar({ open: true, message: '保存しました', severity: 'success' });
+      // [Refactor] PBI-17: api クライアントを使用
+      await api.put<CosmeticsMaster>('/cosmetics-master', updated);
+      showSuccess('保存しました');
     } catch {
-      setSnackbar({ open: true, message: '保存に失敗しました', severity: 'error' });
+      showError('保存に失敗しました');
     }
   };
 
@@ -375,17 +364,15 @@ export default function CosmeticsMasterEditor() {
 
   return (
     <Box>
-      <Box mb={3}>
-        <Typography variant="h5" fontWeight={700}>化粧品マスタ編集</Typography>
-        <Typography variant="body2" color="text.secondary">
-          入力フォームで選択できる化粧品をメーカー・品名・使用期間で管理します
-        </Typography>
-      </Box>
+      {/* [Refactor] PBI-14: PageHeader を使用 */}
+      <PageHeader
+        title="化粧品マスタ編集"
+        subtitle="入力フォームで選択できる化粧品をメーカー・品名・使用期間で管理します"
+      />
 
       {loading ? (
-        <Box display="flex" justifyContent="center" py={8}>
-          <CircularProgress />
-        </Box>
+        // [Refactor] PBI-14: LoadingBox を使用
+        <LoadingBox />
       ) : (
         <Card>
           <CardContent sx={{ p: 0 }}>
@@ -426,14 +413,8 @@ export default function CosmeticsMasterEditor() {
         </Card>
       )}
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={2000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
-      </Snackbar>
+      {/* [Refactor] PBI-17: useSnackbar から取得した要素を配置 */}
+      {snackbarEl}
     </Box>
   );
 }

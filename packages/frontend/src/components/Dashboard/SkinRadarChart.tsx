@@ -13,11 +13,23 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Box, Typography } from '@mui/material';
-import { NormalizedRecord, RadarDataPoint } from '../../types';
+import { NormalizedRecord } from '../../types';
 import { SCALE_MAX, METRIC_LABELS } from '../../constants';
+// [Refactor] PBI-14: 共有コンポーネントを使用
+import EmptyStateBox from '../shared/EmptyStateBox';
+// [Refactor] PBI-18: 日付フォーマット関数を utils/format.ts に委譲
+import { formatFullDate } from '../../utils/format';
 
 interface Props {
   record: NormalizedRecord | null;
+}
+
+// [Refactor] PBI-20: Recharts 固有の型はここにローカル定義（types/index.ts から移動）
+interface RadarDataPoint {
+  metric: string;
+  forehead: number;
+  cheek: number;
+  fullMark: number;
 }
 
 function buildRadarData(record: NormalizedRecord): RadarDataPoint[] {
@@ -31,11 +43,8 @@ function buildRadarData(record: NormalizedRecord): RadarDataPoint[] {
 
 export default function SkinRadarChart({ record }: Props) {
   if (!record) {
-    return (
-      <Box display="flex" alignItems="center" justifyContent="center" height={300}>
-        <Typography color="text.secondary">データがありません</Typography>
-      </Box>
-    );
+    // [Refactor] PBI-14: EmptyStateBox を使用
+    return <EmptyStateBox />;
   }
 
   const data = buildRadarData(record);
@@ -43,7 +52,8 @@ export default function SkinRadarChart({ record }: Props) {
   return (
     <Box>
       <Typography variant="subtitle2" color="text.secondary" mb={1}>
-        最新記録: {new Date(record.timestamp).toLocaleDateString('ja-JP')}
+        {/* [Refactor] PBI-18: formatFullDate を使用 */}
+        最新記録: {formatFullDate(record.timestamp)}
       </Typography>
       <ResponsiveContainer width="100%" height={300}>
         <RadarChart data={data}>

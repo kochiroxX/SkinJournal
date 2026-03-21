@@ -12,12 +12,37 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { useState } from 'react';
-import { NormalizedRecord, TrendDataPoint } from '../../types';
+import { NormalizedRecord } from '../../types';
 import { SCALE_MAX, METRIC_LABELS, METRIC_COLORS } from '../../constants';
+// [Refactor] PBI-14: 共有コンポーネントを使用
+import EmptyStateBox from '../shared/EmptyStateBox';
+// [Refactor] PBI-15: 部位選択トグルを FilterToggleGroup に委譲
+import FilterToggleGroup from '../shared/FilterToggleGroup';
+// [Refactor] PBI-18: 日付フォーマット関数を utils/format.ts に委譲
+import { formatMonthDay } from '../../utils/format';
 
 type AreaFilter = 'forehead' | 'cheek' | 'both';
+
+// [Refactor] PBI-20: Recharts 固有の型はここにローカル定義（types/index.ts から移動）
+interface TrendDataPoint {
+  date: string;
+  foreheadTone: number;
+  foreheadMoisture: number;
+  foreheadOil: number;
+  foreheadElasticity: number;
+  cheekTone: number;
+  cheekMoisture: number;
+  cheekOil: number;
+  cheekElasticity: number;
+}
+
+const AREA_OPTIONS: Record<AreaFilter, string> = {
+  both: '両方',
+  forehead: 'おでこ',
+  cheek: 'ほお',
+};
 
 interface Props {
   records: NormalizedRecord[];
@@ -25,7 +50,7 @@ interface Props {
 
 function buildTrendData(records: NormalizedRecord[]): TrendDataPoint[] {
   return records.map((r) => ({
-    date: new Date(r.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
+    date: formatMonthDay(r.timestamp),
     foreheadTone: r.forehead.tone,
     foreheadMoisture: r.forehead.moisture,
     foreheadOil: r.forehead.oil,
@@ -41,33 +66,24 @@ export default function TrendChart({ records }: Props) {
   const [area, setArea] = useState<AreaFilter>('both');
   const data = buildTrendData(records);
 
+  if (data.length === 0) {
+    // [Refactor] PBI-14: EmptyStateBox を使用
+    return <EmptyStateBox />;
+  }
+
   const showForehead = area === 'forehead' || area === 'both';
   const showCheek = area === 'cheek' || area === 'both';
-
-  if (data.length === 0) {
-    return (
-      <Box display="flex" alignItems="center" justifyContent="center" height={300}>
-        <Typography color="text.secondary">データがありません</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box>
       <Box display="flex" alignItems="center" gap={2} mb={2}>
-        <Typography variant="body2" color="text.secondary">
-          表示部位:
-        </Typography>
-        <ToggleButtonGroup
+        {/* [Refactor] PBI-15: FilterToggleGroup を使用 */}
+        <FilterToggleGroup
+          label="表示部位"
+          options={AREA_OPTIONS}
           value={area}
-          exclusive
-          onChange={(_, v) => v && setArea(v)}
-          size="small"
-        >
-          <ToggleButton value="both">両方</ToggleButton>
-          <ToggleButton value="forehead">おでこ</ToggleButton>
-          <ToggleButton value="cheek">ほお</ToggleButton>
-        </ToggleButtonGroup>
+          onChange={setArea}
+        />
       </Box>
 
       <ResponsiveContainer width="100%" height={320}>

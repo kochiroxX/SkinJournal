@@ -7,19 +7,22 @@ import {
   Box,
   Card,
   CardContent,
-  CircularProgress,
   Grid,
   Tab,
   Tabs,
   Typography,
   Alert,
 } from '@mui/material';
+// [Refactor] PBI-14: CircularProgress は LoadingBox 内に移動したためここでは不要
 import PeriodSelector from './PeriodSelector';
 import TrendChart from './TrendChart';
 import SkinRadarChart from './SkinRadarChart';
 import CosmeticsChart from './CosmeticsChart';
 import FactorsChart from './FactorsChart';
 import SnsExportButton from './SnsExportButton';
+// [Refactor] PBI-14: 共有コンポーネントを使用
+import LoadingBox from '../shared/LoadingBox';
+import PageHeader from '../shared/PageHeader';
 import { useSkinData } from '../../hooks/useSkinData';
 import { PeriodFilter } from '../../types';
 import { SCALE_MAX, getScoreColor } from '../../constants';
@@ -34,16 +37,16 @@ export default function Dashboard() {
 
   return (
     <Box>
-      {/* ヘッダー */}
-      <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1} mb={3}>
-        <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>
-          ダッシュボード
-        </Typography>
-        <Box display="flex" gap={1} alignItems="center">
-          <PeriodSelector value={period} onChange={setPeriod} />
-          <SnsExportButton targetRef={exportRef} filename="skin-journal-dashboard" />
-        </Box>
-      </Box>
+      {/* [Refactor] PBI-14: PageHeader を使用（タイトル + 右揃えコントロールの重複レイアウトを排除） */}
+      <PageHeader
+        title="ダッシュボード"
+        actions={
+          <>
+            <PeriodSelector value={period} onChange={setPeriod} />
+            <SnsExportButton targetRef={exportRef} filename="skin-journal-dashboard" />
+          </>
+        }
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -52,9 +55,8 @@ export default function Dashboard() {
       )}
 
       {loading ? (
-        <Box display="flex" justifyContent="center" py={8}>
-          <CircularProgress />
-        </Box>
+        // [Refactor] PBI-14: LoadingBox を使用
+        <LoadingBox />
       ) : (
         <Box ref={exportRef}>
           <Grid container spacing={3}>
