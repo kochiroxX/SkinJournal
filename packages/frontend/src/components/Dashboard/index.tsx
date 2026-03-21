@@ -17,9 +17,12 @@ import {
 import PeriodSelector from './PeriodSelector';
 import TrendChart from './TrendChart';
 import SkinRadarChart from './SkinRadarChart';
+import CosmeticsChart from './CosmeticsChart';
+import FactorsChart from './FactorsChart';
 import SnsExportButton from './SnsExportButton';
 import { useSkinData } from '../../hooks/useSkinData';
 import { PeriodFilter } from '../../types';
+import { SCALE_MAX, getScoreColor } from '../../constants';
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodFilter>('month');
@@ -59,10 +62,10 @@ export default function Dashboard() {
             {latestRecord && (
               <>
                 {[
-                  { label: 'おでこ 水分', value: latestRecord.forehead.moisture },
-                  { label: 'ほお 水分', value: latestRecord.cheek.moisture },
-                  { label: 'おでこ 弾力', value: latestRecord.forehead.elasticity },
-                  { label: 'ほお 弾力', value: latestRecord.cheek.elasticity },
+                  { label: 'おでこ 水分量', value: latestRecord.forehead.moisture },
+                  { label: 'ほお 水分量', value: latestRecord.cheek.moisture },
+                  { label: 'おでこ 弾性力', value: latestRecord.forehead.elasticity },
+                  { label: 'ほお 弾性力', value: latestRecord.cheek.elasticity },
                 ].map(({ label, value }) => (
                   <Grid item xs={6} sm={3} key={label}>
                     <Card elevation={2} sx={{ textAlign: 'center', py: 1 }}>
@@ -73,12 +76,12 @@ export default function Dashboard() {
                         <Typography
                           variant="h4"
                           fontWeight={700}
-                          color={value >= 7 ? 'success.main' : value >= 4 ? 'warning.main' : 'error.main'}
+                          color={`${getScoreColor(value)}.main`}
                         >
-                          {value.toFixed(1)}
+                          {value}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          / 10
+                          / {SCALE_MAX}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -95,18 +98,19 @@ export default function Dashboard() {
                     value={tab}
                     onChange={(_, v) => setTab(v)}
                     sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+                    variant="scrollable"
+                    scrollButtons="auto"
                   >
                     <Tab label="推移グラフ" />
                     <Tab label="レーダーチャート（最新）" />
+                    <Tab label="化粧品比較" />
+                    <Tab label="外部要因分析" />
                   </Tabs>
 
-                  {tab === 0 && (
-                    <TrendChart records={records} />
-                  )}
-
-                  {tab === 1 && (
-                    <SkinRadarChart record={latestRecord} />
-                  )}
+                  {tab === 0 && <TrendChart records={records} />}
+                  {tab === 1 && <SkinRadarChart record={latestRecord} />}
+                  {tab === 2 && <CosmeticsChart records={records} />}
+                  {tab === 3 && <FactorsChart records={records} />}
                 </CardContent>
               </Card>
             </Grid>

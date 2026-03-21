@@ -144,6 +144,39 @@ export class AppController {
       }
     });
 
+    /** PUT /api/records/:id - レコードを更新する（:id は encodeURIComponent(timestamp)） */
+    this.router.put('/records/:id', async (req: Request, res: Response) => {
+      try {
+        const timestamp = decodeURIComponent(req.params.id);
+        const entry = req.body as SkinEntryInput;
+        const updated = await this.repository.updateRow(timestamp, entry);
+        if (!updated) {
+          res.status(404).json({ success: false, error: 'レコードが見つかりません' });
+          return;
+        }
+        res.json({ success: true });
+      } catch (error) {
+        logger.error('PUT /records/:id error', error);
+        res.status(500).json({ success: false, error: '更新に失敗しました' });
+      }
+    });
+
+    /** DELETE /api/records/:id - レコードを削除する（:id は encodeURIComponent(timestamp)） */
+    this.router.delete('/records/:id', async (req: Request, res: Response) => {
+      try {
+        const timestamp = decodeURIComponent(req.params.id);
+        const deleted = await this.repository.deleteRow(timestamp);
+        if (!deleted) {
+          res.status(404).json({ success: false, error: 'レコードが見つかりません' });
+          return;
+        }
+        res.json({ success: true });
+      } catch (error) {
+        logger.error('DELETE /records/:id error', error);
+        res.status(500).json({ success: false, error: '削除に失敗しました' });
+      }
+    });
+
     /** GET /api/cosmetics-master - 化粧品マスタを返す */
     this.router.get('/cosmetics-master', (_req: Request, res: Response) => {
       try {

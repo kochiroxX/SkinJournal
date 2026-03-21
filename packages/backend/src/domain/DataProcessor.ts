@@ -15,9 +15,9 @@ import {
 import logger from '../utils/logger';
 
 export class DataProcessor {
-  /** 弾力スコアを正規化する（1〜10 → 0.0〜1.0 の範囲にクランプ） */
+  /** スコアを 0〜100 の範囲にクランプする */
   private clampScore(value: number): number {
-    return Math.min(10, Math.max(1, value));
+    return Math.min(100, Math.max(0, value));
   }
 
   /** 文字列を数値にパース（不正値は0） */
