@@ -13,6 +13,8 @@ export default defineConfig({
     },
   },
   build: {
+    outDir: '../backend/public',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {

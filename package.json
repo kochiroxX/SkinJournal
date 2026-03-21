@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=packages/backend\" \"npm run dev --workspace=packages/frontend\"",
-    "build": "npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
+    "build": "npm run build --workspace=packages/frontend && npm run build --workspace=packages/backend",
     "lint": "npm run lint --workspace=packages/frontend && npm run lint --workspace=packages/backend",
     "format": "prettier --write \"packages/**/*.{ts,tsx,json}\""
   },
