@@ -11,7 +11,7 @@ import { useRef, useState } from 'react';
 // [Add] PBI-43: グラフエクスポートボタン
 import ChartExportButton from '../shared/ChartExportButton';
 import { NormalizedRecord } from '../../types';
-import { SCALE_MAX, METRIC_LABELS, METRIC_COLORS, FACTOR_MODE_LABELS } from '../../constants';
+import { METRIC_LABELS, METRIC_COLORS, FACTOR_MODE_LABELS } from '../../constants';
 // [Refactor] PBI-14: 共有コンポーネントを使用
 import EmptyStateBox from '../shared/EmptyStateBox';
 // [Refactor] PBI-15: FilterToggleGroup を使用（ローカルの ToggleButtonGroup 実装を置き換え）
@@ -92,7 +92,17 @@ export default function FactorsChart({ records }: Props) {
           <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis domain={[0, SCALE_MAX]} tickCount={6} tick={{ fontSize: 11 }} />
+            {/* [Update] Y軸デフォルト範囲を 20-70 に設定 */}
+            <YAxis domain={[
+              Math.max(0, Math.min(20, Math.floor(Math.min(...data.flatMap((d) => {
+                const r = d as { tone: number; moisture: number; oil: number; elasticity: number };
+                return [r.tone, r.moisture, r.oil, r.elasticity];
+              })) / 10) * 10)),
+              Math.max(70, Math.ceil(Math.max(...data.flatMap((d) => {
+                const r = d as { tone: number; moisture: number; oil: number; elasticity: number };
+                return [r.tone, r.moisture, r.oil, r.elasticity];
+              })) / 10) * 10),
+            ]} tickCount={6} tick={{ fontSize: 11 }} />
             <Tooltip />
             <Legend />
             {(Object.keys(METRIC_LABELS) as Array<keyof typeof METRIC_LABELS>).map((key) => (

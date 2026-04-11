@@ -108,12 +108,12 @@ export default function CosmeticsChart({ records }: Props) {
     return <EmptyStateBox message="データが不足しています（化粧品を記録してください）" />;
   }
 
-  // [Add] PBI-35: Y軸を動的スケールに変更
+  // [Update] Y軸デフォルト範囲を 20-70 に設定
   const allValues = data.flatMap((d) => [d.tone, d.moisture, d.oil, d.elasticity]);
   const dataMin = Math.min(...allValues);
   const dataMax = Math.max(...allValues);
-  const yMin = Math.max(0, Math.floor(dataMin / 10) * 10 - 10);
-  const yMax = Math.min(100, Math.ceil(dataMax / 10) * 10 + 10);
+  const yMin = Math.max(0, Math.min(20, Math.floor(dataMin / 10) * 10));
+  const yMax = Math.max(70, Math.ceil(dataMax / 10) * 10);
 
   return (
     <Box>

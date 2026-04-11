@@ -35,17 +35,22 @@ import { formatFullDate } from '../../utils/format';
 import { METRIC_COLORS, METRIC_LABELS, SCALE_MAX } from '../../constants';
 
 // ============================================================
-// スコアに応じた色・ラベルを返すユーティリティ
+// スコアに応じた色・ラベルを返すユーティリティ（スコア範囲 20-70 を想定）
 // ============================================================
 function scoreColor(v: number): string {
-  if (v >= 75) return '#4caf50';
-  if (v >= 55) return '#ff9800';
-  return '#e91e63';
+  if (v >= 60) return '#388e3c'; // 落ち着いたグリーン
+  if (v >= 45) return '#e65100'; // 落ち着いたオレンジ
+  return '#c62828';               // 落ち着いたレッド
+}
+function scoreBgColor(v: number): string {
+  if (v >= 60) return '#e8f5e9';
+  if (v >= 45) return '#fff3e0';
+  return '#fce4ec';
 }
 function scoreLabel(avg: number): string {
-  if (avg >= 80) return '絶好調 ✨';
-  if (avg >= 65) return '良好 💪';
-  if (avg >= 50) return 'まずまず 🌿';
+  if (avg >= 65) return '絶好調 ✨';
+  if (avg >= 55) return '良好 💪';
+  if (avg >= 45) return 'まずまず 🌿';
   return 'ケア強化 🌙';
 }
 
@@ -109,12 +114,13 @@ interface SummaryCardProps {
 
 const METRIC_ORDER: (keyof SkinMetrics)[] = ['tone', 'moisture', 'oil', 'elasticity'];
 
-function MetricRow({ label, value }: { label: string; value: number; color: string }) {
+// 指標1行: ラベル・数値・バー（ライトテーマ用）
+function MetricRow({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <Box mb={0.8}>
-      <Box display="flex" justifyContent="space-between" alignItems="baseline" mb={0.25}>
-        <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', lineHeight: 1 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 16, fontWeight: 800, lineHeight: 1, color: '#fff' }}>
+    <Box mb={0.75}>
+      <Box display="flex" justifyContent="space-between" alignItems="baseline" mb={0.2}>
+        <Typography sx={{ fontSize: 10, color: '#757575', lineHeight: 1 }}>{label}</Typography>
+        <Typography sx={{ fontSize: 15, fontWeight: 800, lineHeight: 1, color }}>
           {value}
         </Typography>
       </Box>
@@ -122,13 +128,10 @@ function MetricRow({ label, value }: { label: string; value: number; color: stri
         variant="determinate"
         value={value}
         sx={{
-          height: 4,
+          height: 3,
           borderRadius: 2,
-          bgcolor: 'rgba(255,255,255,0.2)',
-          '& .MuiLinearProgress-bar': {
-            bgcolor: 'rgba(255,255,255,0.9)',
-            borderRadius: 2,
-          },
+          bgcolor: `${color}22`,
+          '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 2 },
         }}
       />
     </Box>
@@ -140,127 +143,117 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
     (record.forehead.tone + record.forehead.moisture + record.forehead.oil + record.forehead.elasticity +
      record.cheek.tone + record.cheek.moisture + record.cheek.oil + record.cheek.elasticity) / 8
   );
-  const color = scoreColor(avg);
+  const color   = scoreColor(avg);
+  const bgColor = scoreBgColor(avg);
+
+  // 進捗バー用に 20-70 レンジを 0-100% に正規化
+  const progressPct = Math.round(Math.min(100, Math.max(0, (avg - 20) / 50 * 100)));
 
   return (
-    // [Add] PBI-37: aspectRatio 1:1 で正方形出力（Twitter 1:1 推奨）
+    // [Add] PBI-37: 1:1 正方形出力（Twitter 推奨）・ライトテーマで視認性向上
     <Box
       sx={{
         aspectRatio: '1 / 1',
-        background: `linear-gradient(145deg, ${color}cc 0%, ${color} 50%, #1a1a2e 100%)`,
+        background: 'linear-gradient(150deg, #fff8f9 0%, #fce4ec 55%, #ede7f6 100%)',
         borderRadius: 3,
-        p: { xs: 2.5, sm: 3 },
+        p: { xs: 2, sm: 2.5 },
         display: 'flex',
         flexDirection: 'column',
-        fontFamily: '"Noto Sans JP", sans-serif',
         overflow: 'hidden',
       }}
     >
-      {/* ヘッダー: ブランド + 日付 */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      {/* ── ヘッダー ── */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
         <Box display="flex" alignItems="center" gap={0.5}>
-          <SpaIcon sx={{ color: 'rgba(255,255,255,0.9)', fontSize: 16 }} />
-          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: 1 }}>
+          <SpaIcon sx={{ color: '#e91e63', fontSize: 16 }} />
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#c2185b', letterSpacing: 0.5 }}>
             SkinJournal
           </Typography>
         </Box>
-        <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.65)' }}>
+        <Typography sx={{ fontSize: 11, color: '#9e9e9e' }}>
           {formatFullDate(record.timestamp)}
         </Typography>
       </Box>
 
-      {/* 総合スコア */}
+      {/* ── 総合スコア ── */}
       <Box
         sx={{
-          bgcolor: 'rgba(255,255,255,0.12)',
+          bgcolor: 'white',
           borderRadius: 2,
-          p: { xs: 1.5, sm: 2 },
-          mb: 2,
+          p: { xs: 1.2, sm: 1.5 },
+          mb: 1.5,
           display: 'flex',
           alignItems: 'center',
-          gap: { xs: 1.5, sm: 2 },
-          backdropFilter: 'blur(4px)',
+          gap: 1.5,
+          boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
         }}
       >
-        {/* スコアサークル */}
+        {/* スコアサークル（ボーダーリング） */}
         <Box
           sx={{
-            width: { xs: 64, sm: 76 },
-            height: { xs: 64, sm: 76 },
+            width: { xs: 56, sm: 64 },
+            height: { xs: 56, sm: 64 },
             borderRadius: '50%',
-            background: `conic-gradient(rgba(255,255,255,0.9) ${avg}%, rgba(255,255,255,0.15) 0%)`,
+            border: `4px solid ${color}`,
+            bgcolor: bgColor,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}
         >
-          <Box
-            sx={{
-              width: { xs: 50, sm: 60 },
-              height: { xs: 50, sm: 60 },
-              borderRadius: '50%',
-              bgcolor: 'rgba(0,0,0,0.35)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 900, lineHeight: 1, color: '#fff' }}>
-              {avg}
-            </Typography>
-            <Typography sx={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', lineHeight: 1 }}>
-              / {SCALE_MAX}
-            </Typography>
-          </Box>
+          <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 900, lineHeight: 1, color }}>
+            {avg}
+          </Typography>
+          <Typography sx={{ fontSize: 8, color: '#bdbdbd', lineHeight: 1.2 }}>
+            /{SCALE_MAX}
+          </Typography>
         </Box>
 
-        <Box flex={1}>
-          <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', mb: 0.4 }}>総合スコア</Typography>
-          <Typography sx={{ fontSize: { xs: 18, sm: 22 }, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
+        <Box flex={1} minWidth={0}>
+          <Typography sx={{ fontSize: 10, color: '#9e9e9e', mb: 0.3 }}>総合スコア</Typography>
+          <Typography sx={{ fontSize: { xs: 16, sm: 18 }, fontWeight: 800, color: '#212121', lineHeight: 1.2 }}>
             {scoreLabel(avg)}
           </Typography>
           <LinearProgress
             variant="determinate"
-            value={avg}
+            value={progressPct}
             sx={{
-              mt: 1,
+              mt: 0.8,
               height: 5,
-              borderRadius: 2.5,
-              bgcolor: 'rgba(255,255,255,0.2)',
-              '& .MuiLinearProgress-bar': { bgcolor: 'rgba(255,255,255,0.9)', borderRadius: 2.5 },
+              borderRadius: 3,
+              bgcolor: `${color}22`,
+              '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 3 },
             }}
           />
         </Box>
       </Box>
 
-      {/* おでこ / ほお 指標 */}
-      <Grid container spacing={1.5} sx={{ flex: 1 }}>
+      {/* ── おでこ / ほお 指標 ── */}
+      <Grid container spacing={1} sx={{ flex: 1 }}>
         {(['forehead', 'cheek'] as const).map((area) => (
           <Grid item xs={6} key={area}>
             <Box
               sx={{
-                bgcolor: 'rgba(255,255,255,0.10)',
+                bgcolor: 'white',
                 borderRadius: 2,
-                p: { xs: 1.2, sm: 1.5 },
+                p: { xs: 1, sm: 1.2 },
                 height: '100%',
-                backdropFilter: 'blur(4px)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                borderTop: `3px solid ${area === 'forehead' ? '#e91e63' : '#7986cb'}`,
               }}
             >
-              <Box display="flex" alignItems="center" gap={0.5} mb={1}>
-                <Box
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    bgcolor: area === 'forehead' ? '#f48fb1' : '#90caf9',
-                  }}
-                />
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                  {area === 'forehead' ? 'おでこ' : 'ほお'}
-                </Typography>
-              </Box>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: area === 'forehead' ? '#e91e63' : '#7986cb',
+                  mb: 0.8,
+                }}
+              >
+                {area === 'forehead' ? 'おでこ' : 'ほお'}
+              </Typography>
               {METRIC_ORDER.map((key) => (
                 <MetricRow
                   key={key}
@@ -274,23 +267,21 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
         ))}
       </Grid>
 
-      {/* 使用コスメタグ */}
+      {/* ── 使用コスメタグ ── */}
       {(record.cosmetics.toner || record.cosmetics.essence || record.cosmetics.lotion || record.cosmetics.primer) && (
-        <Box mt={1.5}>
-          <Box display="flex" flexWrap="wrap" gap={0.6}>
-            {[
-              { label: '化粧水', value: record.cosmetics.toner },
-              { label: '美容液', value: record.cosmetics.essence },
-              { label: '乳液',   value: record.cosmetics.lotion },
-              { label: '下地',   value: record.cosmetics.primer },
-            ].filter((c) => c.value).map((c) => (
-              <Box key={c.label} sx={{ bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1.5, px: 1, py: 0.3 }}>
-                <Typography sx={{ fontSize: 9, color: 'rgba(255,255,255,0.85)' }}>
-                  {c.label}: {c.value}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
+        <Box mt={1} display="flex" flexWrap="wrap" gap={0.5}>
+          {[
+            { label: '化粧水', value: record.cosmetics.toner },
+            { label: '美容液', value: record.cosmetics.essence },
+            { label: '乳液',   value: record.cosmetics.lotion },
+            { label: '下地',   value: record.cosmetics.primer },
+          ].filter((c) => c.value).map((c) => (
+            <Box key={c.label} sx={{ bgcolor: '#fce4ec', borderRadius: 1.5, px: 1, py: 0.3 }}>
+              <Typography sx={{ fontSize: 9, color: '#c2185b' }}>
+                {c.label}: {c.value}
+              </Typography>
+            </Box>
+          ))}
         </Box>
       )}
     </Box>
@@ -348,8 +339,8 @@ export default function SnsPage() {
 
           {/* ── スコアサマリー（正方形・SNS画像メイン） ── */}
           {latestRecord && (
-            <Grid item xs={12} sm={6} md={5}>
-              <Card elevation={0} sx={{ height: '100%' }}>
+            <Grid item xs={12} md={6}>
+              <Card elevation={0}>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
                     <Box>
@@ -367,8 +358,8 @@ export default function SnsPage() {
           )}
 
           {/* ── レーダーチャート（正方形） ── */}
-          <Grid item xs={12} sm={6} md={7}>
-            <Card elevation={0} sx={{ height: '100%' }}>
+          <Grid item xs={12} md={6}>
+            <Card elevation={0}>
               <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                   <Box>
@@ -382,7 +373,7 @@ export default function SnsPage() {
                   ref={radarRef}
                   sx={{
                     aspectRatio: '1 / 1',
-                    bgcolor: 'background.paper',
+                    bgcolor: '#fafafa',
                     borderRadius: 2,
                     display: 'flex',
                     flexDirection: 'column',

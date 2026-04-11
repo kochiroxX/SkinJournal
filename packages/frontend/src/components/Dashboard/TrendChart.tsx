@@ -169,9 +169,9 @@ export default function TrendChart({ records }: Props) {
   const allValues = data.flatMap((d) => metricKeys.map((k) => d[k] as number));
   const dataMin = Math.min(...allValues);
   const dataMax = Math.max(...allValues);
-  // 上下に余白を持たせ、0〜100の範囲内に収める
-  const yMin = Math.max(0, Math.floor(dataMin / 10) * 10 - 10);
-  const yMax = Math.min(100, Math.ceil(dataMax / 10) * 10 + 10);
+  // [Update] Y軸デフォルト範囲を 20-70 に設定（実データ範囲に合わせて変動あり・下限は0未満にしない）
+  const yMin = Math.max(0, Math.min(20, Math.floor(dataMin / 10) * 10));
+  const yMax = Math.max(70, Math.ceil(dataMax / 10) * 10);
 
   // [Add] PBI-42 + PBI-43: 共通のチャート子要素
   const chartChildren = (
