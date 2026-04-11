@@ -8,6 +8,7 @@ import { useRef } from 'react';
 import { Box, Tooltip, Typography } from '@mui/material';
 import { NormalizedRecord } from '../../types';
 import { formatFullDate } from '../../utils/format';
+import { buildScoreByDate } from '../../utils/metrics';
 import ChartExportButton from '../shared/ChartExportButton';
 
 interface Props {
@@ -55,17 +56,8 @@ function buildWeekGrid(weeks: number): { date: string; week: number; weekday: nu
 export default function WeeklyHeatmap({ records, weeks = 26 }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // [Add] PBI-41: 日付ごとの平均スコアを計算
-  const scoreByDate = new Map<string, number>();
-  for (const r of records) {
-    const date = r.timestamp.slice(0, 10);
-    const avg = (
-      r.forehead.tone + r.forehead.moisture + r.forehead.oil + r.forehead.elasticity +
-      r.cheek.tone + r.cheek.moisture + r.cheek.oil + r.cheek.elasticity
-    ) / 8;
-    const prev = scoreByDate.get(date);
-    scoreByDate.set(date, prev !== undefined ? (prev + avg) / 2 : avg);
-  }
+  // [Refactor] buildScoreByDate に集約（複数レコード/日の算術平均を正確に計算）
+  const scoreByDate = buildScoreByDate(records);
 
   const cells = buildWeekGrid(weeks);
   const cellSize = 18;

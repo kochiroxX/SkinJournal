@@ -5,7 +5,6 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ScatterChart, Scatter, ZAxis,
 } from 'recharts';
 import { Box } from '@mui/material';
 import { useRef, useState } from 'react';
@@ -106,6 +105,3 @@ export default function FactorsChart({ records }: Props) {
   );
 }
 
-// ScatterChart と ZAxis はバンドルに含まれるよう import しているが、
-// 今後の散布図拡張時のために残しておく
-void ScatterChart; void Scatter; void ZAxis;

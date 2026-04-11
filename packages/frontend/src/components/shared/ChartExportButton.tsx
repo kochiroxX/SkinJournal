@@ -4,12 +4,14 @@
 // - ダウンロード: PNG をローカル保存
 // - コピー: PNG をクリップボードにコピー（非対応ブラウザはダウンロードにフォールバック）
 // SnsExportButton（ダッシュボード全体書き出し）の代替として個別グラフに配置する。
+// [Fix] エクスポート失敗時にアイコンを赤くしてユーザーに通知する。
 // ============================================================
 
 import { useState } from 'react';
 import { Box, CircularProgress, IconButton, Tooltip } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DownloadIcon from '@mui/icons-material/Download';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { toPng } from 'html-to-image';
 
 interface Props {
@@ -19,9 +21,11 @@ interface Props {
   filename?: string;
 }
 
+type ButtonState = 'idle' | 'loading' | 'error';
+
 export default function ChartExportButton({ targetRef, filename = 'skin-journal-chart' }: Props) {
-  const [downloading, setDownloading] = useState(false);
-  const [copying, setCopying] = useState(false);
+  const [downloadState, setDownloadState] = useState<ButtonState>('idle');
+  const [copyState, setCopyState]         = useState<ButtonState>('idle');
 
   const capture = async (): Promise<string | null> => {
     if (!targetRef.current) return null;
@@ -32,7 +36,7 @@ export default function ChartExportButton({ targetRef, filename = 'skin-journal-
   };
 
   const handleDownload = async () => {
-    setDownloading(true);
+    setDownloadState('loading');
     try {
       const dataUrl = await capture();
       if (!dataUrl) return;
@@ -40,20 +44,21 @@ export default function ChartExportButton({ targetRef, filename = 'skin-journal-
       link.download = `${filename}.png`;
       link.href = dataUrl;
       link.click();
+      setDownloadState('idle');
     } catch (err) {
       console.error('Download failed:', err);
-    } finally {
-      setDownloading(false);
+      setDownloadState('error');
+      // [Fix] 3秒後にアイコンをリセット
+      setTimeout(() => setDownloadState('idle'), 3000);
     }
   };
 
   const handleCopy = async () => {
-    setCopying(true);
+    setCopyState('loading');
     try {
       const dataUrl = await capture();
       if (!dataUrl) return;
 
-      // Clipboard API でコピーを試みる
       if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
         const res = await fetch(dataUrl);
         const blob = await res.blob();
@@ -65,36 +70,55 @@ export default function ChartExportButton({ targetRef, filename = 'skin-journal-
         link.href = dataUrl;
         link.click();
       }
+      setCopyState('idle');
     } catch (err) {
       console.error('Copy failed:', err);
-    } finally {
-      setCopying(false);
+      setCopyState('error');
+      // [Fix] 3秒後にアイコンをリセット
+      setTimeout(() => setCopyState('idle'), 3000);
     }
   };
 
+  const copyLabel =
+    copyState === 'error' ? 'コピーに失敗しました' : 'クリップボードにコピー';
+  const downloadLabel =
+    downloadState === 'error' ? 'ダウンロードに失敗しました' : 'PNG ダウンロード';
+
   return (
     <Box display="flex" gap={0.5}>
-      <Tooltip title="クリップボードにコピー">
+      <Tooltip title={copyLabel}>
         <span>
           <IconButton
             size="small"
             onClick={handleCopy}
-            disabled={copying || downloading}
-            sx={{ color: 'text.secondary' }}
+            disabled={copyState === 'loading' || downloadState === 'loading'}
+            sx={{ color: copyState === 'error' ? 'error.main' : 'text.secondary' }}
           >
-            {copying ? <CircularProgress size={16} /> : <ContentCopyIcon fontSize="small" />}
+            {copyState === 'loading' ? (
+              <CircularProgress size={16} />
+            ) : copyState === 'error' ? (
+              <ErrorOutlineIcon fontSize="small" />
+            ) : (
+              <ContentCopyIcon fontSize="small" />
+            )}
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip title="PNG ダウンロード">
+      <Tooltip title={downloadLabel}>
         <span>
           <IconButton
             size="small"
             onClick={handleDownload}
-            disabled={downloading || copying}
-            sx={{ color: 'text.secondary' }}
+            disabled={downloadState === 'loading' || copyState === 'loading'}
+            sx={{ color: downloadState === 'error' ? 'error.main' : 'text.secondary' }}
           >
-            {downloading ? <CircularProgress size={16} /> : <DownloadIcon fontSize="small" />}
+            {downloadState === 'loading' ? (
+              <CircularProgress size={16} />
+            ) : downloadState === 'error' ? (
+              <ErrorOutlineIcon fontSize="small" />
+            ) : (
+              <DownloadIcon fontSize="small" />
+            )}
           </IconButton>
         </span>
       </Tooltip>

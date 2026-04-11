@@ -9,6 +9,7 @@ import { Box, Tooltip, Typography } from '@mui/material';
 import { NormalizedRecord } from '../../types';
 import { METRIC_LABELS } from '../../constants';
 import { formatFullDate } from '../../utils/format';
+import { buildScoreByDate } from '../../utils/metrics';
 import ChartExportButton from '../shared/ChartExportButton';
 
 interface Props {
@@ -42,17 +43,8 @@ function buildCalendarDays(days = 365): string[] {
 export default function CalendarHeatmap({ records }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // 日付ごとの平均スコア（おでこ+ほお 全指標平均）
-  const scoreByDate = new Map<string, number>();
-  for (const r of records) {
-    const date = r.timestamp.slice(0, 10);
-    const avg = (
-      r.forehead.tone + r.forehead.moisture + r.forehead.oil + r.forehead.elasticity +
-      r.cheek.tone + r.cheek.moisture + r.cheek.oil + r.cheek.elasticity
-    ) / 8;
-    const prev = scoreByDate.get(date);
-    scoreByDate.set(date, prev !== undefined ? (prev + avg) / 2 : avg);
-  }
+  // [Refactor] buildScoreByDate に集約（複数レコード/日の算術平均を正確に計算）
+  const scoreByDate = buildScoreByDate(records);
 
   const days = buildCalendarDays(365);
   // 最初の日曜日まで空白セルを追加

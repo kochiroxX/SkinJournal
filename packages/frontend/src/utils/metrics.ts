@@ -24,6 +24,28 @@ export function avgMetrics(
   ) as unknown as SkinMetrics;
 }
 
+/**
+ * [Add] PBI-40/41: レコード群から「日付 → 平均スコア（全8指標の平均）」を正確に算出する。
+ * 同一日に複数レコードがある場合、加重平均ではなく件数ベースの算術平均を使用する。
+ * ※ (prev + avg) / 2 方式では3件目以降の算出結果が誤るため別途 accumulator を管理する。
+ */
+export function buildScoreByDate(records: NormalizedRecord[]): Map<string, number> {
+  const acc = new Map<string, { sum: number; count: number }>();
+  for (const r of records) {
+    const date = r.timestamp.slice(0, 10);
+    const avg =
+      (r.forehead.tone + r.forehead.moisture + r.forehead.oil + r.forehead.elasticity +
+       r.cheek.tone    + r.cheek.moisture    + r.cheek.oil    + r.cheek.elasticity) / 8;
+    const prev = acc.get(date);
+    acc.set(date, prev ? { sum: prev.sum + avg, count: prev.count + 1 } : { sum: avg, count: 1 });
+  }
+  const result = new Map<string, number>();
+  for (const [date, { sum, count }] of acc) {
+    result.set(date, sum / count);
+  }
+  return result;
+}
+
 /** 配列を keyFn の戻り値でグループ化して Map を返す */
 export function groupBy<T>(arr: T[], keyFn: (item: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();

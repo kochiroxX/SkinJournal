@@ -67,11 +67,12 @@ function generateAiPrompt(record: NormalizedRecord): string {
     record.cosmetics.primer  && `　下地: ${record.cosmetics.primer}`,
   ].filter(Boolean);
 
+  // [Fix] sleepHours === 0 は falsy のため !== undefined で判定する
   const lifelogSection = [
-    record.factors.sleepHours && `　睡眠: ${record.factors.sleepHours}時間`,
+    record.factors.sleepHours !== undefined && record.factors.sleepHours > 0 && `　睡眠: ${record.factors.sleepHours}時間`,
     record.factors.businessTrip && '　出張あり',
     record.factors.alcohol && '　飲酒あり',
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
   return [
     'あなたはSNS投稿の文章作成アシスタントです。',
