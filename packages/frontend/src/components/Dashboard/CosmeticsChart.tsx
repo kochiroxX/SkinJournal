@@ -1,6 +1,7 @@
 // ============================================================
 // PBI-11: 化粧品別 平均肌スコア比較グラフ
 // [Add] PBI-35: チャート表示改善
+// [Add] PBI-43: グラフ個別エクスポートボタンを追加
 //   - X軸ラベルを斜め表示にして切れを防止
 //   - Y軸スケールをデータの実際の範囲に合わせて動的に変更
 //   - ツールチップに使用件数を表示
@@ -10,7 +11,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { Box, Paper, Typography } from '@mui/material';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+// [Add] PBI-43: グラフエクスポートボタン
+import ChartExportButton from '../shared/ChartExportButton';
 import { NormalizedRecord } from '../../types';
 import { METRIC_LABELS, METRIC_COLORS, COSMETIC_FIELD_LABELS } from '../../constants';
 // [Refactor] PBI-14: 共有コンポーネントを使用
@@ -95,6 +98,8 @@ interface Props {
 export default function CosmeticsChart({ records }: Props) {
   const [field, setField] = useState<CosmeticField>('toner');
   const [area, setArea] = useState<AreaFilter>('forehead');
+  // [Add] PBI-43: エクスポート用 ref
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const data = buildChartData(records, field, area);
 
@@ -112,28 +117,34 @@ export default function CosmeticsChart({ records }: Props) {
 
   return (
     <Box>
-      <Box display="flex" gap={2} flexWrap="wrap" mb={2}>
-        {/* [Refactor] PBI-15: FilterToggleGroup を使用 */}
-        <FilterToggleGroup label="カテゴリ" options={COSMETIC_FIELD_LABELS} value={field} onChange={setField} />
-        <FilterToggleGroup label="部位" options={AREA_LABELS} value={area} onChange={setArea} />
+      <Box display="flex" gap={2} flexWrap="wrap" alignItems="center" justifyContent="space-between" mb={2}>
+        <Box display="flex" gap={2} flexWrap="wrap">
+          {/* [Refactor] PBI-15: FilterToggleGroup を使用 */}
+          <FilterToggleGroup label="カテゴリ" options={COSMETIC_FIELD_LABELS} value={field} onChange={setField} />
+          <FilterToggleGroup label="部位" options={AREA_LABELS} value={area} onChange={setArea} />
+        </Box>
+        {/* [Add] PBI-43: エクスポートボタン */}
+        <ChartExportButton targetRef={chartRef} filename="skin-cosmetics" />
       </Box>
 
-      <ResponsiveContainer width="100%" height={340}>
-        {/* [Add] PBI-35: bottom マージンを増やして斜めラベルが収まるようにする */}
-        <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          {/* [Add] PBI-35: X軸ラベルを-45度に傾けて切れを防止 */}
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" interval={0} height={70} />
-          {/* [Add] PBI-35: Y軸スケールを動的に変更 */}
-          <YAxis domain={[yMin, yMax]} tickCount={6} tick={{ fontSize: 11 }} />
-          {/* [Add] PBI-35: カスタムツールチップを使用 */}
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          {(Object.keys(METRIC_LABELS) as Array<keyof typeof METRIC_LABELS>).map((key) => (
-            <Bar key={key} dataKey={key} name={METRIC_LABELS[key]} fill={METRIC_COLORS[key]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+      <Box ref={chartRef}>
+        <ResponsiveContainer width="100%" height={340}>
+          {/* [Add] PBI-35: bottom マージンを増やして斜めラベルが収まるようにする */}
+          <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 60 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            {/* [Add] PBI-35: X軸ラベルを-45度に傾けて切れを防止 */}
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" interval={0} height={70} />
+            {/* [Add] PBI-35: Y軸スケールを動的に変更 */}
+            <YAxis domain={[yMin, yMax]} tickCount={6} tick={{ fontSize: 11 }} />
+            {/* [Add] PBI-35: カスタムツールチップを使用 */}
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            {(Object.keys(METRIC_LABELS) as Array<keyof typeof METRIC_LABELS>).map((key) => (
+              <Bar key={key} dataKey={key} name={METRIC_LABELS[key]} fill={METRIC_COLORS[key]} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
     </Box>
   );
 }

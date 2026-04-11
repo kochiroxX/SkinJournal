@@ -5,6 +5,8 @@ import Dashboard from './components/Dashboard';
 import InputForm from './components/InputForm';
 import DataTable from './components/DataTable';
 import CosmeticsMasterEditor from './components/CosmeticsMasterEditor';
+// [Add] PBI-37: SNS出力用画面
+import SnsPage from './components/SnsPage';
 
 const theme = createTheme({
   palette: {
@@ -55,6 +57,8 @@ export default function App() {
             <Route path="/input" element={<InputForm />} />
             <Route path="/data" element={<DataTable />} />
             <Route path="/settings" element={<CosmeticsMasterEditor />} />
+            {/* [Add] PBI-37: SNS出力用画面 */}
+            <Route path="/sns" element={<SnsPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>

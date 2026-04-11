@@ -1,8 +1,11 @@
 // ============================================================
 // PBI-03: インタラクティブ・ダッシュボード
+// [Add] PBI-40: カレンダービュータブを追加
+// [Add] PBI-41: 週次ヒートマップタブを追加
+// [Update] PBI-43: SnsExportButton を削除（個別エクスポートに移行）
 // ============================================================
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Card,
@@ -19,7 +22,10 @@ import TrendChart from './TrendChart';
 import SkinRadarChart from './SkinRadarChart';
 import CosmeticsChart from './CosmeticsChart';
 import FactorsChart from './FactorsChart';
-import SnsExportButton from './SnsExportButton';
+// [Add] PBI-40: カレンダービュー
+import CalendarHeatmap from './CalendarHeatmap';
+// [Add] PBI-41: 週次ヒートマップ
+import WeeklyHeatmap from './WeeklyHeatmap';
 // [Refactor] PBI-14: 共有コンポーネントを使用
 import LoadingBox from '../shared/LoadingBox';
 import PageHeader from '../shared/PageHeader';
@@ -31,21 +37,18 @@ export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodFilter>('month');
   const [tab, setTab] = useState(0);
   const { records, loading, error } = useSkinData(period);
-  const exportRef = useRef<HTMLDivElement>(null);
+  // [Add] PBI-40/41: カレンダー・ヒートマップは全期間データを使用
+  const { records: allRecords } = useSkinData('all');
 
   const latestRecord = records.length > 0 ? records[records.length - 1] : null;
 
   return (
     <Box>
       {/* [Refactor] PBI-14: PageHeader を使用（タイトル + 右揃えコントロールの重複レイアウトを排除） */}
+      {/* [Update] PBI-43: SnsExportButton を削除（各グラフに個別エクスポートボタンを配置） */}
       <PageHeader
         title="ダッシュボード"
-        actions={
-          <>
-            <PeriodSelector value={period} onChange={setPeriod} />
-            <SnsExportButton targetRef={exportRef} filename="skin-journal-dashboard" />
-          </>
-        }
+        actions={<PeriodSelector value={period} onChange={setPeriod} />}
       />
 
       {error && (
@@ -58,7 +61,7 @@ export default function Dashboard() {
         // [Refactor] PBI-14: LoadingBox を使用
         <LoadingBox />
       ) : (
-        <Box ref={exportRef}>
+        <Box>
           <Grid container spacing={3}>
             {/* サマリーカード */}
             {latestRecord && (
@@ -107,12 +110,20 @@ export default function Dashboard() {
                     <Tab label="レーダーチャート（最新）" />
                     <Tab label="化粧品比較" />
                     <Tab label="外部要因分析" />
+                    {/* [Add] PBI-40: カレンダービュー */}
+                    <Tab label="カレンダー" />
+                    {/* [Add] PBI-41: 週次ヒートマップ */}
+                    <Tab label="週次ヒートマップ" />
                   </Tabs>
 
                   {tab === 0 && <TrendChart records={records} />}
                   {tab === 1 && <SkinRadarChart record={latestRecord} />}
                   {tab === 2 && <CosmeticsChart records={records} />}
                   {tab === 3 && <FactorsChart records={records} />}
+                  {/* [Add] PBI-40: 全期間データを渡す */}
+                  {tab === 4 && <CalendarHeatmap records={allRecords} />}
+                  {/* [Add] PBI-41: 全期間データを渡す */}
+                  {tab === 5 && <WeeklyHeatmap records={allRecords} />}
                 </CardContent>
               </Card>
             </Grid>

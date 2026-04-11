@@ -26,6 +26,8 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import TuneIcon from '@mui/icons-material/Tune';
 import SpaIcon from '@mui/icons-material/Spa';
+// [Add] PBI-37: SNSナビアイコン
+import ShareIcon from '@mui/icons-material/Share';
 
 const DRAWER_WIDTH = 220;
 
@@ -34,6 +36,8 @@ const NAV_ITEMS = [
   { label: '肌状態を記録', path: '/input', icon: <EditNoteIcon /> },
   { label: 'データビュー', path: '/data', icon: <TableChartIcon /> },
   { label: '化粧品マスタ', path: '/settings', icon: <TuneIcon /> },
+  // [Add] PBI-37: SNS出力画面
+  { label: 'SNS出力', path: '/sns', icon: <ShareIcon /> },
 ];
 
 interface Props {

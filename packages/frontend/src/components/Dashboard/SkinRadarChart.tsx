@@ -1,5 +1,6 @@
 // ============================================================
 // PBI-05: 最新肌状態のレーダーチャート
+// [Add] PBI-43: グラフ個別エクスポートボタンを追加
 // ============================================================
 
 import {
@@ -13,12 +14,15 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Box, Typography } from '@mui/material';
+import { useRef } from 'react';
 import { NormalizedRecord } from '../../types';
 import { SCALE_MAX, METRIC_LABELS } from '../../constants';
 // [Refactor] PBI-14: 共有コンポーネントを使用
 import EmptyStateBox from '../shared/EmptyStateBox';
 // [Refactor] PBI-18: 日付フォーマット関数を utils/format.ts に委譲
 import { formatFullDate } from '../../utils/format';
+// [Add] PBI-43: グラフエクスポートボタン
+import ChartExportButton from '../shared/ChartExportButton';
 
 interface Props {
   record: NormalizedRecord | null;
@@ -42,6 +46,9 @@ function buildRadarData(record: NormalizedRecord): RadarDataPoint[] {
 }
 
 export default function SkinRadarChart({ record }: Props) {
+  // [Add] PBI-43: エクスポート用 ref
+  const chartRef = useRef<HTMLDivElement>(null);
+
   if (!record) {
     // [Refactor] PBI-14: EmptyStateBox を使用
     return <EmptyStateBox />;
@@ -51,21 +58,27 @@ export default function SkinRadarChart({ record }: Props) {
 
   return (
     <Box>
-      <Typography variant="subtitle2" color="text.secondary" mb={1}>
-        {/* [Refactor] PBI-18: formatFullDate を使用 */}
-        最新記録: {formatFullDate(record.timestamp)}
-      </Typography>
-      <ResponsiveContainer width="100%" height={300}>
-        <RadarChart data={data}>
-          <PolarGrid />
-          <PolarAngleAxis dataKey="metric" tick={{ fontSize: 14 }} />
-          <PolarRadiusAxis angle={90} domain={[0, SCALE_MAX]} tickCount={6} tick={{ fontSize: 10 }} />
-          <Radar name="おでこ" dataKey="forehead" stroke="#e91e63" fill="#e91e63" fillOpacity={0.3} />
-          <Radar name="ほお" dataKey="cheek" stroke="#2196f3" fill="#2196f3" fillOpacity={0.3} />
-          <Legend />
-          <Tooltip />
-        </RadarChart>
-      </ResponsiveContainer>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+        <Typography variant="subtitle2" color="text.secondary">
+          {/* [Refactor] PBI-18: formatFullDate を使用 */}
+          最新記録: {formatFullDate(record.timestamp)}
+        </Typography>
+        {/* [Add] PBI-43: エクスポートボタン */}
+        <ChartExportButton targetRef={chartRef} filename="skin-radar" />
+      </Box>
+      <Box ref={chartRef}>
+        <ResponsiveContainer width="100%" height={300}>
+          <RadarChart data={data}>
+            <PolarGrid />
+            <PolarAngleAxis dataKey="metric" tick={{ fontSize: 14 }} />
+            <PolarRadiusAxis angle={90} domain={[0, SCALE_MAX]} tickCount={6} tick={{ fontSize: 10 }} />
+            <Radar name="おでこ" dataKey="forehead" stroke="#e91e63" fill="#e91e63" fillOpacity={0.3} />
+            <Radar name="ほお" dataKey="cheek" stroke="#2196f3" fill="#2196f3" fillOpacity={0.3} />
+            <Legend />
+            <Tooltip />
+          </RadarChart>
+        </ResponsiveContainer>
+      </Box>
     </Box>
   );
 }

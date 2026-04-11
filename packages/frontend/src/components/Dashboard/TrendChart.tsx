@@ -4,11 +4,15 @@
 //   - X軸ラベルを斜め表示にして切れを防止
 //   - Y軸スケールをデータの実際の範囲に合わせて動的に変更
 //   - ツールチップに使用化粧品・ライフログ情報を追加表示
+// [Add] PBI-42: 面グラフ（AreaChart）モード切り替えトグルを追加
+// [Add] PBI-43: グラフ個別エクスポートボタンを追加
 // ============================================================
 
 import {
   LineChart,
   Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,7 +21,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Box, Divider, Paper, Typography } from '@mui/material';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import ChartExportButton from '../shared/ChartExportButton';
 import { NormalizedRecord } from '../../types';
 import { METRIC_LABELS, METRIC_COLORS } from '../../constants';
 // [Refactor] PBI-14: 共有コンポーネントを使用
@@ -133,8 +138,18 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
   );
 }
 
+// [Add] PBI-42: 折れ線 ↔ 面グラフ切り替えオプション
+const CHART_MODE_OPTIONS: Record<'line' | 'area', string> = {
+  line: '折れ線',
+  area: '面グラフ',
+};
+
 export default function TrendChart({ records }: Props) {
   const [area, setArea] = useState<AreaFilter>('both');
+  // [Add] PBI-42: グラフモード（折れ線 / 面グラフ）
+  const [chartMode, setChartMode] = useState<'line' | 'area'>('line');
+  // [Add] PBI-43: エクスポート用 ref
+  const chartRef = useRef<HTMLDivElement>(null);
   const data = buildTrendData(records);
 
   if (data.length === 0) {
@@ -158,49 +173,94 @@ export default function TrendChart({ records }: Props) {
   const yMin = Math.max(0, Math.floor(dataMin / 10) * 10 - 10);
   const yMax = Math.min(100, Math.ceil(dataMax / 10) * 10 + 10);
 
-  return (
-    <Box>
-      <Box display="flex" alignItems="center" gap={2} mb={2}>
-        {/* [Refactor] PBI-15: FilterToggleGroup を使用 */}
-        <FilterToggleGroup
-          label="表示部位"
-          options={AREA_OPTIONS}
-          value={area}
-          onChange={setArea}
-        />
-      </Box>
+  // [Add] PBI-42 + PBI-43: 共通のチャート子要素
+  const chartChildren = (
+    <>
+      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+      <XAxis dataKey="date" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" interval={0} height={60} />
+      <YAxis domain={[yMin, yMax]} tickCount={6} tick={{ fontSize: 11 }} />
+      <Tooltip content={<CustomTooltip />} />
+      <Legend wrapperStyle={{ paddingTop: 8 }} />
 
-      <ResponsiveContainer width="100%" height={340}>
-        {/* [Add] PBI-35: X軸ラベルが切れないよう bottom マージンを増加 */}
-        <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 40 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          {/* [Add] PBI-35: X軸ラベルを-45度に傾けて切れを防止 */}
-          <XAxis dataKey="date" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" interval={0} height={60} />
-          {/* [Add] PBI-35: Y軸スケールを動的に変更 */}
-          <YAxis domain={[yMin, yMax]} tickCount={6} tick={{ fontSize: 11 }} />
-          {/* [Add] PBI-35: カスタムツールチ��プを使用 */}
-          <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ paddingTop: 8 }} />
-
-          {showForehead && (
+      {showForehead && (
+        <>
+          {chartMode === 'line' ? (
             <>
               <Line type="monotone" dataKey="foreheadTone" name={`おでこ・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
               <Line type="monotone" dataKey="foreheadMoisture" name={`おでこ・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
               <Line type="monotone" dataKey="foreheadOil" name={`おでこ・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
               <Line type="monotone" dataKey="foreheadElasticity" name={`おでこ・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
             </>
+          ) : (
+            <>
+              <Area type="monotone" dataKey="foreheadTone" name={`おでこ・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} fill={METRIC_COLORS.tone} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
+              <Area type="monotone" dataKey="foreheadMoisture" name={`おでこ・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} fill={METRIC_COLORS.moisture} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
+              <Area type="monotone" dataKey="foreheadOil" name={`おでこ・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} fill={METRIC_COLORS.oil} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
+              <Area type="monotone" dataKey="foreheadElasticity" name={`おでこ・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} fill={METRIC_COLORS.elasticity} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
+            </>
           )}
+        </>
+      )}
 
-          {showCheek && (
+      {showCheek && (
+        <>
+          {chartMode === 'line' ? (
             <>
               <Line type="monotone" dataKey="cheekTone" name={`ほお・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} />
               <Line type="monotone" dataKey="cheekMoisture" name={`ほお・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} />
               <Line type="monotone" dataKey="cheekOil" name={`ほお・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} />
               <Line type="monotone" dataKey="cheekElasticity" name={`ほお・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} />
             </>
+          ) : (
+            <>
+              <Area type="monotone" dataKey="cheekTone" name={`ほお・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} fill={METRIC_COLORS.tone} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
+              <Area type="monotone" dataKey="cheekMoisture" name={`ほお・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} fill={METRIC_COLORS.moisture} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
+              <Area type="monotone" dataKey="cheekOil" name={`ほお・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} fill={METRIC_COLORS.oil} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
+              <Area type="monotone" dataKey="cheekElasticity" name={`ほお・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} fill={METRIC_COLORS.elasticity} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
+            </>
           )}
-        </LineChart>
-      </ResponsiveContainer>
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <Box>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Box display="flex" alignItems="center" gap={2}>
+          {/* [Refactor] PBI-15: FilterToggleGroup を使用 */}
+          <FilterToggleGroup
+            label="表示部位"
+            options={AREA_OPTIONS}
+            value={area}
+            onChange={setArea}
+          />
+          {/* [Add] PBI-42: グラフモード切り替え */}
+          <FilterToggleGroup
+            label="グラフ種別"
+            options={CHART_MODE_OPTIONS}
+            value={chartMode}
+            onChange={setChartMode}
+          />
+        </Box>
+        {/* [Add] PBI-43: エクスポートボタン */}
+        <ChartExportButton targetRef={chartRef} filename="skin-trend" />
+      </Box>
+
+      <Box ref={chartRef}>
+        <ResponsiveContainer width="100%" height={340}>
+          {/* [Add] PBI-42: chartMode に応じて LineChart / AreaChart を切り替え */}
+          {chartMode === 'line' ? (
+            <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 40 }}>
+              {chartChildren}
+            </LineChart>
+          ) : (
+            <AreaChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 40 }}>
+              {chartChildren}
+            </AreaChart>
+          )}
+        </ResponsiveContainer>
+      </Box>
     </Box>
   );
 }
