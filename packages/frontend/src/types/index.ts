@@ -17,6 +17,8 @@ export interface CosmeticsUsed {
   toner: string;    // 化粧水
   essence: string;  // 美容液
   lotion: string;   // 乳液
+  // [Add] PBI-33: 下地カテゴリを追加
+  primer: string;   // 下地
 }
 
 export interface ExternalFactors {
@@ -63,6 +65,8 @@ export interface CosmeticsMaster {
   toners: CosmeticItem[];
   essences: CosmeticItem[];
   lotions: CosmeticItem[];
+  // [Add] PBI-33: 下地カテゴリを追加
+  primers: CosmeticItem[];
 }
 
 /** アイテムを "メーカー / 品名" 形式にフォーマット（CSV に保存する値） */

@@ -64,6 +64,8 @@ export default function CosmeticsSelector({ value, master, onChange }: Props) {
           { field: 'toner',   label: '化粧水', items: master.toners },
           { field: 'essence', label: '美容液', items: master.essences },
           { field: 'lotion',  label: '乳液',   items: master.lotions },
+          // [Add] PBI-33: 下地カテゴリを追加
+          { field: 'primer',  label: '下地',   items: master.primers },
         ] as const
       ).map(({ field, label, items }) => (
         <Grid item xs={12} sm={4} key={field}>

@@ -34,6 +34,8 @@ SkinJournal/
 ├── .gitignore
 ├── ecosystem.config.cjs             # pm2 設定（Mac mini 本番環境）
 ├── README.md
+├── docs/
+│   └── analysis-methods.md          # 分析手法調査レポート（PBI-36）
 │
 ├── packages/
 │   ├── backend/                     # Node.js + Express サーバー
@@ -141,6 +143,7 @@ cp packages/backend/.env.example packages/backend/.env
 | toner | 化粧水 |
 | essence | 美容液 |
 | lotion | 乳液 |
+| primer | 下地（PBI-33 追加） |
 | businessTrip | 出張（TRUE/FALSE） |
 | alcohol | 飲酒（TRUE/FALSE） |
 | sleepHours | 睡眠時間（時間） |

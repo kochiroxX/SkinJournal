@@ -20,6 +20,8 @@ export interface CosmeticsUsed {
   toner: string;    // 化粧水
   essence: string;  // 美容液
   lotion: string;   // 乳液
+  // [Add] PBI-33: 下地カテゴリを追加
+  primer: string;   // 下地
 }
 
 /** 外部要因・ライフログ */
@@ -76,6 +78,8 @@ export interface RawSheetRow {
   toner: string;
   essence: string;
   lotion: string;
+  // [Add] PBI-33: 下地カテゴリを追加
+  primer: string;
   businessTrip: string;
   alcohol: string;
   sleepHours: string;
@@ -118,4 +122,6 @@ export interface CosmeticsMaster {
   toners: CosmeticItem[];
   essences: CosmeticItem[];
   lotions: CosmeticItem[];
+  // [Add] PBI-33: 下地カテゴリを追加
+  primers: CosmeticItem[];
 }

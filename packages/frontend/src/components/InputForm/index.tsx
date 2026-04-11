@@ -39,6 +39,8 @@ const DEFAULT_COSMETICS: CosmeticsUsed = {
   toner: '',
   essence: '',
   lotion: '',
+  // [Add] PBI-33: 下地カテゴリを追加
+  primer: '',
 };
 
 const DEFAULT_FACTORS: ExternalFactors = {

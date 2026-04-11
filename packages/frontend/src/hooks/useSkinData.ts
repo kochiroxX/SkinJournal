@@ -44,6 +44,8 @@ export function useCosmeticsMaster() {
     toners: [],
     essences: [],
     lotions: [],
+    // [Add] PBI-33: 下地カテゴリを追加
+    primers: [],
   });
   const [loading, setLoading] = useState(false);
 
