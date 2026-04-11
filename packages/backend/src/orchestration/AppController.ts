@@ -44,7 +44,14 @@ export class AppController {
 
   private loadMaster(): CosmeticsMaster {
     if (!fs.existsSync(this.masterPath)) return { ...DEFAULT_MASTER };
-    return JSON.parse(fs.readFileSync(this.masterPath, 'utf-8')) as CosmeticsMaster;
+    const raw = JSON.parse(fs.readFileSync(this.masterPath, 'utf-8')) as Partial<CosmeticsMaster>;
+    // [Fix] PBI-33: 旧 JSON に primers がない場合の後方互換フォールバック
+    return {
+      toners:  raw.toners  ?? [],
+      essences: raw.essences ?? [],
+      lotions:  raw.lotions  ?? [],
+      primers:  raw.primers  ?? [],
+    };
   }
 
   private saveMaster(master: CosmeticsMaster): void {

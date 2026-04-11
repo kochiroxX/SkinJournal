@@ -53,7 +53,8 @@ export function useCosmeticsMaster() {
     setLoading(true);
     api
       .get<CosmeticsMaster>('/cosmetics-master')
-      .then(setMaster)
+      // [Fix] PBI-33: 旧データで primers がない場合の後方互換フォールバック
+      .then((data) => setMaster({ ...data, primers: data.primers ?? [] }))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

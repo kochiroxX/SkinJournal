@@ -77,7 +77,8 @@ export default function CosmeticsSelector({ value, master, onChange }: Props) {
               onChange={(e) => onChange({ ...value, [field]: e.target.value })}
             >
               <MenuItem value="">未使用</MenuItem>
-              {buildMenuItems(items)}
+              {/* [Fix] PBI-33: items が undefined の場合（旧データとの互換）は空配列にフォールバック */}
+              {buildMenuItems(items ?? [])}
             </Select>
           </FormControl>
         </Grid>
