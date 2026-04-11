@@ -87,6 +87,8 @@ export class DataProcessor {
         toner: row.toner,
         essence: row.essence,
         lotion: row.lotion,
+        // [Add] PBI-33: 下地フィールドを追加
+        primer: row.primer,
       };
 
       const factors = {

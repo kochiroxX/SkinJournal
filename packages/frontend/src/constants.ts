@@ -34,11 +34,13 @@ export const METRIC_SLIDER_CONFIG: { key: keyof SkinMetrics; label: string; colo
 ];
 
 // [Refactor] PBI-15: CosmeticsChart.tsx でローカル定義されていた FIELD_LABELS を移動。
-/** 化粧品カテゴリの表示ラベル（CosmeticsChart で使用） */
-export const COSMETIC_FIELD_LABELS: Record<'toner' | 'essence' | 'lotion', string> = {
+// [Add] PBI-33: 下地カテゴリを追加
+/** 化粧品カテゴリの表示ラベル（CosmeticsChart・CosmeticsSelector で使用） */
+export const COSMETIC_FIELD_LABELS: Record<'toner' | 'essence' | 'lotion' | 'primer', string> = {
   toner:   '化粧水',
   essence: '美容液',
   lotion:  '乳液',
+  primer:  '下地',
 };
 
 // [Refactor] PBI-15: FactorsChart.tsx でローカル定義されていた MODE_LABELS を移動。

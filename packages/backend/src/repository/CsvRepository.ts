@@ -12,7 +12,8 @@ const CSV_HEADERS = [
   'timestamp',
   'foreheadTone', 'foreheadMoisture', 'foreheadOil', 'foreheadElasticity',
   'cheekTone', 'cheekMoisture', 'cheekOil', 'cheekElasticity',
-  'toner', 'essence', 'lotion',
+  // [Add] PBI-33: 下地カラムを lotion の後に追加
+  'toner', 'essence', 'lotion', 'primer',
   'businessTrip', 'alcohol', 'sleepHours', 'notes',
 ];
 
@@ -40,6 +41,8 @@ function entryToFields(timestamp: string, entry: SkinEntryInput): (string | numb
     entry.cosmetics.toner,
     entry.cosmetics.essence,
     entry.cosmetics.lotion,
+    // [Add] PBI-33: 下地フィールドを追加
+    entry.cosmetics.primer,
     entry.factors.businessTrip ? 'TRUE' : 'FALSE',
     entry.factors.alcohol ? 'TRUE' : 'FALSE',
     entry.factors.sleepHours,
@@ -61,6 +64,8 @@ function entryToRawRow(timestamp: string, entry: SkinEntryInput): RawSheetRow {
     toner:              entry.cosmetics.toner,
     essence:            entry.cosmetics.essence,
     lotion:             entry.cosmetics.lotion,
+    // [Add] PBI-33: 下地フィールドを追加
+    primer:             entry.cosmetics.primer,
     businessTrip:       entry.factors.businessTrip ? 'TRUE' : 'FALSE',
     alcohol:            entry.factors.alcohol ? 'TRUE' : 'FALSE',
     sleepHours:         String(entry.factors.sleepHours),
@@ -112,6 +117,8 @@ export class CsvRepository {
       toner: r['toner'] ?? '',
       essence: r['essence'] ?? '',
       lotion: r['lotion'] ?? '',
+      // [Add] PBI-33: 旧データとの後方互換のため '' をデフォルト値に設定
+      primer: r['primer'] ?? '',
       businessTrip: r['businessTrip'] ?? 'FALSE',
       alcohol: r['alcohol'] ?? 'FALSE',
       sleepHours: r['sleepHours'] ?? '0',
@@ -165,7 +172,8 @@ export class CsvRepository {
       [
         r.timestamp, r.foreheadTone, r.foreheadMoisture, r.foreheadOil, r.foreheadElasticity,
         r.cheekTone, r.cheekMoisture, r.cheekOil, r.cheekElasticity,
-        r.toner, r.essence, r.lotion,
+        // [Add] PBI-33: 下地フィールドを追加
+        r.toner, r.essence, r.lotion, r.primer,
         r.businessTrip, r.alcohol, r.sleepHours, r.notes,
       ].map(escapeField).join(',')
     );

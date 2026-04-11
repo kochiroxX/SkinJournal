@@ -1,5 +1,8 @@
 // ============================================================
 // PBI-02: データテーブルビュー（生データ・正規化済みデータの確認）
+// [Add] PBI-34: モバイル対応（スマホではカード表示）と詳細・編集・削除ポップアップ化
+//   - sm 以上: 従来のテーブル表示（ヘッダー列を省略可能な項目を隠す）
+//   - xs のみ: レコードをカード形式で表示し、タップでポップアップを開く
 // ============================================================
 
 import { useState } from 'react';
@@ -29,12 +32,17 @@ import {
   TextField,
   Checkbox,
   FormControlLabel,
+  Stack,
+  Divider,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useSkinData, updateRecord, deleteRecord } from '../../hooks/useSkinData';
 import { NormalizedRecord, SkinMetrics, SkinEntryInput } from '../../types';
 import { METRIC_LABELS, METRIC_COLORS } from '../../constants';
@@ -89,6 +97,8 @@ function EditDialog({
   const [toner, setToner] = useState(record.cosmetics.toner);
   const [essence, setEssence] = useState(record.cosmetics.essence);
   const [lotion, setLotion] = useState(record.cosmetics.lotion);
+  // [Add] PBI-33: 下地フィールドを追加
+  const [primer, setPrimer] = useState(record.cosmetics.primer);
   const [businessTrip, setBusinessTrip] = useState(record.factors.businessTrip);
   const [alcohol, setAlcohol] = useState(record.factors.alcohol);
   const [sleepHours, setSleepHours] = useState(record.factors.sleepHours);
@@ -99,7 +109,8 @@ function EditDialog({
     setSaving(true);
     await onSave({
       forehead, cheek,
-      cosmetics: { toner, essence, lotion },
+      // [Add] PBI-33: 下地フィールドを追加
+      cosmetics: { toner, essence, lotion, primer },
       factors: { businessTrip, alcohol, sleepHours, notes },
     });
     setSaving(false);
@@ -119,6 +130,8 @@ function EditDialog({
               <TextField size="small" label="化粧水" value={toner} onChange={(e) => setToner(e.target.value)} fullWidth />
               <TextField size="small" label="美容液" value={essence} onChange={(e) => setEssence(e.target.value)} fullWidth />
               <TextField size="small" label="乳液" value={lotion} onChange={(e) => setLotion(e.target.value)} fullWidth />
+              {/* [Add] PBI-33: 下地フィールドを追加 */}
+              <TextField size="small" label="下地" value={primer} onChange={(e) => setPrimer(e.target.value)} fullWidth />
             </Box>
           </Box>
           <Box>
@@ -158,6 +171,85 @@ function EditDialog({
   );
 }
 
+// ── [Add] PBI-34: 詳細ポップアップ ────────────────────────
+function DetailDialog({
+  record,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  record: NormalizedRecord;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ pb: 1 }}>
+        <Typography variant="subtitle1" fontWeight={700}>{formatDateTime(record.timestamp)}</Typography>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={2}>
+          {/* 肌指標 */}
+          {(['forehead', 'cheek'] as const).map((area) => (
+            <Box key={area}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                {area === 'forehead' ? 'おでこ' : 'ほお'}
+              </Typography>
+              <Box display="flex" gap={0.5} flexWrap="wrap" mt={0.5}>
+                {(Object.keys(METRIC_LABELS) as Array<keyof SkinMetrics>).map((key) => (
+                  <Box key={key} display="flex" alignItems="center" gap={0.5}>
+                    <Typography variant="caption" color="text.secondary">{METRIC_LABELS[key]}:</Typography>
+                    <ScoreChip value={record[area][key]} />
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          ))}
+
+          <Divider />
+
+          {/* 使用化粧品 */}
+          <Box>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>使用化粧品</Typography>
+            <Box mt={0.5}>
+              {[
+                { label: '化粧水', value: record.cosmetics.toner },
+                { label: '美容液', value: record.cosmetics.essence },
+                { label: '乳液',   value: record.cosmetics.lotion },
+                // [Add] PBI-33: 下地を追加
+                { label: '下地',   value: record.cosmetics.primer },
+              ].map(({ label, value }) => (
+                <Typography key={label} variant="body2">{label}: {value || '未使用'}</Typography>
+              ))}
+            </Box>
+          </Box>
+
+          <Divider />
+
+          {/* ライフログ */}
+          <Box>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>ライフログ</Typography>
+            <Box mt={0.5} display="flex" gap={1} flexWrap="wrap" alignItems="center">
+              <Chip icon={<BoolIcon value={record.factors.businessTrip} />} label="出張" size="small" variant="outlined" />
+              <Chip icon={<BoolIcon value={record.factors.alcohol} />} label="飲酒" size="small" variant="outlined" />
+              <Typography variant="body2">睡眠: {record.factors.sleepHours}h</Typography>
+              {record.factors.notes && (
+                <Typography variant="body2" color="text.secondary">メモ: {record.factors.notes}</Typography>
+              )}
+            </Box>
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>閉じる</Button>
+        <Button color="error" startIcon={<DeleteIcon />} onClick={onDelete}>削除</Button>
+        <Button variant="contained" startIcon={<EditIcon />} onClick={onEdit}>編集</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 // ── 正規化済みデータテーブル ────────────────────────────
 function NormalizedTable({
   records,
@@ -166,10 +258,16 @@ function NormalizedTable({
   records: NormalizedRecord[];
   onRefetch: () => void;
 }) {
+  const theme = useTheme();
+  // [Add] PBI-34: モバイル判定（xs のみカードビュー）
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [editRecord, setEditRecord] = useState<NormalizedRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NormalizedRecord | null>(null);
+  // [Add] PBI-34: 詳細ポップアップ用
+  const [detailRecord, setDetailRecord] = useState<NormalizedRecord | null>(null);
   // [Refactor] PBI-17: useSnackbar フックに委譲
   const { showSuccess, showError, snackbarEl } = useSnackbar();
 
@@ -193,76 +291,144 @@ function NormalizedTable({
       await deleteRecord(deleteTarget!.timestamp);
       showSuccess('削除しました');
       setDeleteTarget(null);
+      setDetailRecord(null);
       onRefetch();
     } catch {
       showError('削除に失敗しました');
     }
   };
 
+  const pagination = (
+    <TablePagination
+      component="div"
+      count={records.length}
+      page={page}
+      onPageChange={(_, p) => setPage(p)}
+      rowsPerPage={rowsPerPage}
+      onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+      rowsPerPageOptions={[5, 10, 25]}
+      labelRowsPerPage="表示件数:"
+    />
+  );
+
   return (
     <>
-      <TableContainer>
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell>日時</TableCell>
-              <TableCell>おでこ</TableCell>
-              <TableCell>ほお</TableCell>
-              <TableCell>化粧水</TableCell>
-              <TableCell>美容液</TableCell>
-              <TableCell>乳液</TableCell>
-              <TableCell align="center">出張</TableCell>
-              <TableCell align="center">飲酒</TableCell>
-              <TableCell>睡眠</TableCell>
-              <TableCell>メモ</TableCell>
-              <TableCell align="center">操作</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginated.map((r) => (
-              <TableRow key={r.id} hover>
-                <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>
-                  {/* [Refactor] PBI-18: formatDateTime を使用 */}
-                  {formatDateTime(r.timestamp)}
-                </TableCell>
-                <TableCell><MetricsCell metrics={r.forehead} /></TableCell>
-                <TableCell><MetricsCell metrics={r.cheek} /></TableCell>
-                <TableCell><Typography variant="caption">{r.cosmetics.toner || '—'}</Typography></TableCell>
-                <TableCell><Typography variant="caption">{r.cosmetics.essence || '—'}</Typography></TableCell>
-                <TableCell><Typography variant="caption">{r.cosmetics.lotion || '—'}</Typography></TableCell>
-                <TableCell align="center"><BoolIcon value={r.factors.businessTrip} /></TableCell>
-                <TableCell align="center"><BoolIcon value={r.factors.alcohol} /></TableCell>
-                <TableCell><Typography variant="caption">{r.factors.sleepHours}h</Typography></TableCell>
-                <TableCell sx={{ maxWidth: 120 }}>
-                  <Typography variant="caption" noWrap>{r.factors.notes || '—'}</Typography>
-                </TableCell>
-                <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
-                  <Tooltip title="編集">
-                    <IconButton size="small" onClick={() => setEditRecord(r)}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="削除">
-                    <IconButton size="small" color="error" onClick={() => setDeleteTarget(r)}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        component="div"
-        count={records.length}
-        page={page}
-        onPageChange={(_, p) => setPage(p)}
-        rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-        rowsPerPageOptions={[5, 10, 25]}
-        labelRowsPerPage="表示件数:"
-      />
+      {/* [Add] PBI-34: モバイルはカードビュー */}
+      {isMobile ? (
+        <Box>
+          {paginated.map((r) => (
+            <Card
+              key={r.id}
+              variant="outlined"
+              sx={{ mb: 1, cursor: 'pointer' }}
+              onClick={() => setDetailRecord(r)}
+            >
+              <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">{formatDateTime(r.timestamp)}</Typography>
+                    <Box display="flex" gap={0.5} mt={0.5} flexWrap="wrap">
+                      {(Object.keys(METRIC_LABELS) as Array<keyof SkinMetrics>).map((key) => (
+                        <Chip
+                          key={key}
+                          label={`${METRIC_LABELS[key][0]}:${r.forehead[key]}`}
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderColor: METRIC_COLORS[key], color: METRIC_COLORS[key], fontSize: 10 }}
+                        />
+                      ))}
+                    </Box>
+                    {r.cosmetics.toner && (
+                      <Typography variant="caption" color="text.secondary" display="block" mt={0.25}>
+                        化粧水: {r.cosmetics.toner}
+                      </Typography>
+                    )}
+                  </Box>
+                  <VisibilityIcon fontSize="small" color="action" sx={{ mt: 0.5, flexShrink: 0 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+          {pagination}
+        </Box>
+      ) : (
+        // デスクトップはテーブル表示
+        <>
+          <TableContainer>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>日時</TableCell>
+                  <TableCell>おでこ</TableCell>
+                  <TableCell>ほお</TableCell>
+                  <TableCell>化粧水</TableCell>
+                  <TableCell>美容液</TableCell>
+                  <TableCell>乳液</TableCell>
+                  {/* [Add] PBI-33: 下地カラムを追加 */}
+                  <TableCell>下地</TableCell>
+                  <TableCell align="center">出張</TableCell>
+                  <TableCell align="center">飲酒</TableCell>
+                  <TableCell>睡眠</TableCell>
+                  <TableCell>メモ</TableCell>
+                  <TableCell align="center">操作</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginated.map((r) => (
+                  <TableRow key={r.id} hover>
+                    <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+                      {/* [Refactor] PBI-18: formatDateTime を使用 */}
+                      {formatDateTime(r.timestamp)}
+                    </TableCell>
+                    <TableCell><MetricsCell metrics={r.forehead} /></TableCell>
+                    <TableCell><MetricsCell metrics={r.cheek} /></TableCell>
+                    <TableCell><Typography variant="caption">{r.cosmetics.toner || '—'}</Typography></TableCell>
+                    <TableCell><Typography variant="caption">{r.cosmetics.essence || '—'}</Typography></TableCell>
+                    <TableCell><Typography variant="caption">{r.cosmetics.lotion || '—'}</Typography></TableCell>
+                    {/* [Add] PBI-33: 下地カラムを追加 */}
+                    <TableCell><Typography variant="caption">{r.cosmetics.primer || '—'}</Typography></TableCell>
+                    <TableCell align="center"><BoolIcon value={r.factors.businessTrip} /></TableCell>
+                    <TableCell align="center"><BoolIcon value={r.factors.alcohol} /></TableCell>
+                    <TableCell><Typography variant="caption">{r.factors.sleepHours}h</Typography></TableCell>
+                    <TableCell sx={{ maxWidth: 120 }}>
+                      <Typography variant="caption" noWrap>{r.factors.notes || '—'}</Typography>
+                    </TableCell>
+                    <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
+                      {/* [Add] PBI-34: 詳細ポップアップを開くボタンを追加 */}
+                      <Tooltip title="詳細">
+                        <IconButton size="small" onClick={() => setDetailRecord(r)}>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="編集">
+                        <IconButton size="small" onClick={() => setEditRecord(r)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="削除">
+                        <IconButton size="small" color="error" onClick={() => setDeleteTarget(r)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          {pagination}
+        </>
+      )}
+
+      {/* [Add] PBI-34: 詳細ポップアップ */}
+      {detailRecord && !editRecord && (
+        <DetailDialog
+          record={detailRecord}
+          onClose={() => setDetailRecord(null)}
+          onEdit={() => { setEditRecord(detailRecord); setDetailRecord(null); }}
+          onDelete={() => setDeleteTarget(detailRecord)}
+        />
+      )}
 
       {editRecord && (
         <EditDialog record={editRecord} onClose={() => setEditRecord(null)} onSave={handleSave} />
@@ -318,6 +484,8 @@ function DatasetSummary({ records }: { records: NormalizedRecord[] }) {
             <Typography variant="body2">化粧水: {latest.cosmetics.toner || '未使用'}</Typography>
             <Typography variant="body2">美容液: {latest.cosmetics.essence || '未使用'}</Typography>
             <Typography variant="body2">乳液: {latest.cosmetics.lotion || '未使用'}</Typography>
+            {/* [Add] PBI-33: 下地を追加 */}
+            <Typography variant="body2">下地: {latest.cosmetics.primer || '未使用'}</Typography>
           </Box>
         </Box>
         <Box flex={1} minWidth={200}>

@@ -9,6 +9,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
   Tab,
@@ -46,6 +50,8 @@ const CATEGORY_CONFIG: { key: Category; label: string }[] = [
   { key: 'toners',   label: '化粧水' },
   { key: 'essences', label: '美容液' },
   { key: 'lotions',  label: '乳液'  },
+  // [Add] PBI-33: 下地カテゴリを追加
+  { key: 'primers',  label: '下地'  },
 ];
 
 const STATUS_CHIP: Record<'active' | 'upcoming' | 'expired', { label: string; color: 'success' | 'default' | 'warning' }> = {
@@ -60,8 +66,18 @@ function generateId(): string {
 
 // [Refactor] PBI-18: formatDate は utils/format.ts の formatSlashDate に移動済み。ここでは削除。
 
-// ── アイテム追加フォーム ──────────────────────────────────────
-function AddItemForm({ onAdd }: { onAdd: (item: CosmeticItem) => void }) {
+// ── [Add] PBI-34: アイテム追加ダイアログ（以前はインラインフォーム）
+// 「新規追加」ボタンをクリックするとダイアログが開く形式に変更。
+// 画面の横幅を節約し、モバイルでも操作しやすくする。
+function AddItemDialog({
+  open,
+  onClose,
+  onAdd,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdd: (item: CosmeticItem) => void;
+}) {
   const [maker, setMaker]         = useState('');
   const [name, setName]           = useState('');
   const [startDate, setStartDate] = useState('');
@@ -82,56 +98,66 @@ function AddItemForm({ onAdd }: { onAdd: (item: CosmeticItem) => void }) {
     setName('');
     setStartDate('');
     setEndDate('');
-    nameRef.current?.focus();
+    onClose();
   };
 
   return (
-    <Box display="flex" gap={1} flexWrap="wrap" alignItems="flex-end" mb={2}>
-      <TextField
-        size="small"
-        label="メーカー"
-        placeholder="例: SKII"
-        value={maker}
-        onChange={(e) => setMaker(e.target.value)}
-        sx={{ width: 160 }}
-      />
-      <TextField
-        inputRef={nameRef}
-        size="small"
-        label="品名 *"
-        placeholder="例: フェイシャル トリートメント"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        sx={{ flex: 1, minWidth: 180 }}
-      />
-      <TextField
-        size="small"
-        type="date"
-        label="使用開始"
-        value={startDate}
-        onChange={(e) => setStartDate(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        sx={{ width: 155 }}
-      />
-      <TextField
-        size="small"
-        type="date"
-        label="使用終了"
-        value={endDate}
-        onChange={(e) => setEndDate(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        sx={{ width: 155 }}
-      />
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={handleAdd}
-        disabled={!name.trim()}
-        sx={{ height: 40 }}
-      >
-        追加
-      </Button>
-    </Box>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>新規アイテムを追加</DialogTitle>
+      <DialogContent>
+        <Box display="flex" flexDirection="column" gap={2} pt={1}>
+          <TextField
+            size="small"
+            label="メーカー"
+            placeholder="例: SKII"
+            value={maker}
+            onChange={(e) => setMaker(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            inputRef={nameRef}
+            size="small"
+            label="品名 *"
+            placeholder="例: フェイシャル トリートメント"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            autoFocus
+          />
+          <Box display="flex" gap={1}>
+            <TextField
+              size="small"
+              type="date"
+              label="使用開始"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <TextField
+              size="small"
+              type="date"
+              label="使用終了"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+          </Box>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>キャンセル</Button>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!name.trim()}
+        >
+          追加
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -308,9 +334,12 @@ function CategoryTable({
 
 // ── メインコンポーネント ──────────────────────────────────────
 export default function CosmeticsMasterEditor() {
-  const [master, setMaster] = useState<CosmeticsMaster>({ toners: [], essences: [], lotions: [] });
+  // [Add] PBI-33: 下地カテゴリを追加
+  const [master, setMaster] = useState<CosmeticsMaster>({ toners: [], essences: [], lotions: [], primers: [] });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(0);
+  // [Add] PBI-34: 追加ダイアログの開閉状態
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   // [Refactor] PBI-17: Snackbar state + JSX を useSnackbar フックに委譲
   const { showSuccess, showError, snackbarEl } = useSnackbar();
 
@@ -340,6 +369,7 @@ export default function CosmeticsMasterEditor() {
     const updated = { ...master, [currentCategory]: [...master[currentCategory], item] };
     setMaster(updated);
     persist(updated);
+    setAddDialogOpen(false);
   };
 
   const handleUpdate = (updatedItem: CosmeticItem) => {
@@ -401,7 +431,16 @@ export default function CosmeticsMasterEditor() {
             </Tabs>
 
             <Box sx={{ p: 3 }}>
-              <AddItemForm onAdd={handleAdd} />
+              {/* [Add] PBI-34: 追加ボタン＋ダイアログに変更（以前はインラインフォーム） */}
+              <Box display="flex" justifyContent="flex-end" mb={2}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setAddDialogOpen(true)}
+                >
+                  新規追加
+                </Button>
+              </Box>
               <Divider sx={{ mb: 2 }} />
               <CategoryTable
                 items={master[currentCategory]}
@@ -412,6 +451,13 @@ export default function CosmeticsMasterEditor() {
           </CardContent>
         </Card>
       )}
+
+      {/* [Add] PBI-34: 追加ダイアログ */}
+      <AddItemDialog
+        open={addDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        onAdd={handleAdd}
+      />
 
       {/* [Refactor] PBI-17: useSnackbar から取得した要素を配置 */}
       {snackbarEl}

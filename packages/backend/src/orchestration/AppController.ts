@@ -23,6 +23,8 @@ const DEFAULT_MASTER: CosmeticsMaster = {
   lotions: [
     { id: 'sample-l1', maker: 'サンプルブランド', name: '乳液A' },
   ],
+  // [Add] PBI-33: 下地カテゴリを追加
+  primers: [],
 };
 
 export class AppController {
@@ -42,7 +44,14 @@ export class AppController {
 
   private loadMaster(): CosmeticsMaster {
     if (!fs.existsSync(this.masterPath)) return { ...DEFAULT_MASTER };
-    return JSON.parse(fs.readFileSync(this.masterPath, 'utf-8')) as CosmeticsMaster;
+    const raw = JSON.parse(fs.readFileSync(this.masterPath, 'utf-8')) as Partial<CosmeticsMaster>;
+    // [Fix] PBI-33: 旧 JSON に primers がない場合の後方互換フォールバック
+    return {
+      toners:  raw.toners  ?? [],
+      essences: raw.essences ?? [],
+      lotions:  raw.lotions  ?? [],
+      primers:  raw.primers  ?? [],
+    };
   }
 
   private saveMaster(master: CosmeticsMaster): void {
@@ -145,7 +154,8 @@ export class AppController {
     /** PUT /api/cosmetics-master - 化粧品マスタを更新する */
     this.router.put('/cosmetics-master', asyncHandler(async (req, res) => {
       const body = req.body as CosmeticsMaster;
-      if (!Array.isArray(body.toners) || !Array.isArray(body.essences) || !Array.isArray(body.lotions)) {
+      // [Add] PBI-33: primers バリデーションを追加
+      if (!Array.isArray(body.toners) || !Array.isArray(body.essences) || !Array.isArray(body.lotions) || !Array.isArray(body.primers)) {
         res.status(400).json({ success: false, error: 'フォーマットが不正です' });
         return;
       }
@@ -162,6 +172,8 @@ export class AppController {
         toners: sanitize(body.toners),
         essences: sanitize(body.essences),
         lotions: sanitize(body.lotions),
+        // [Add] PBI-33: 下地カテゴリを追加
+        primers: sanitize(body.primers),
       };
       this.saveMaster(master);
       logger.info('Cosmetics master updated');
