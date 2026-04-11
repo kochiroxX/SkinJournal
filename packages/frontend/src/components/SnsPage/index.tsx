@@ -13,7 +13,6 @@ import {
   Grid,
   IconButton,
   InputAdornment,
-  LinearProgress,
   OutlinedInput,
   Tooltip,
   Typography,
@@ -114,26 +113,41 @@ interface SummaryCardProps {
 
 const METRIC_ORDER: (keyof SkinMetrics)[] = ['tone', 'moisture', 'oil', 'elasticity'];
 
-// 指標1行: ラベル・数値・バー（ライトテーマ用）
-function MetricRow({ label, value, color }: { label: string; value: number; color: string }) {
+// 指標バブル: conic-gradient リングで % を表現し、内側に数値を表示
+function MetricBubble({ label, value, color }: { label: string; value: number; color: string }) {
+  const pct = Math.round(Math.min(100, Math.max(0, (value - 20) / 50 * 100)));
   return (
-    <Box mb={0.75}>
-      <Box display="flex" justifyContent="space-between" alignItems="baseline" mb={0.2}>
-        <Typography sx={{ fontSize: 10, color: '#757575', lineHeight: 1 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 15, fontWeight: 800, lineHeight: 1, color }}>
-          {value}
-        </Typography>
-      </Box>
-      <LinearProgress
-        variant="determinate"
-        value={value}
+    <Box display="flex" flexDirection="column" alignItems="center" gap={0.75}>
+      <Box
         sx={{
-          height: 3,
-          borderRadius: 2,
-          bgcolor: `${color}22`,
-          '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 2 },
+          width: { xs: 60, sm: 68 },
+          height: { xs: 60, sm: 68 },
+          borderRadius: '50%',
+          background: `conic-gradient(${color} ${pct}%, ${color}22 0%)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
-      />
+      >
+        <Box
+          sx={{
+            width: { xs: 46, sm: 52 },
+            height: { xs: 46, sm: 52 },
+            borderRadius: '50%',
+            bgcolor: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography sx={{ fontSize: { xs: 15, sm: 17 }, fontWeight: 800, color, lineHeight: 1 }}>
+            {value}
+          </Typography>
+        </Box>
+      </Box>
+      <Typography sx={{ fontSize: { xs: 10, sm: 11 }, color: '#757575', lineHeight: 1, textAlign: 'center' }}>
+        {label}
+      </Typography>
     </Box>
   );
 }
@@ -150,20 +164,18 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
   const progressPct = Math.round(Math.min(100, Math.max(0, (avg - 20) / 50 * 100)));
 
   return (
-    // [Add] PBI-37: 1:1 正方形出力（Twitter 推奨）・ライトテーマで視認性向上
     <Box
       sx={{
-        aspectRatio: '1 / 1',
         background: 'linear-gradient(150deg, #fff8f9 0%, #fce4ec 55%, #ede7f6 100%)',
         borderRadius: 3,
-        p: { xs: 2, sm: 2.5 },
+        p: { xs: 2, sm: 3 },
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        gap: 2,
       }}
     >
       {/* ── ヘッダー ── */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
         <Box display="flex" alignItems="center" gap={0.5}>
           <SpaIcon sx={{ color: '#e91e63', fontSize: 16 }} />
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#c2185b', letterSpacing: 0.5 }}>
@@ -175,40 +187,50 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
         </Typography>
       </Box>
 
-      {/* ── 総合スコア ── */}
+      {/* ── 総合スコア（conic-gradient リング） ── */}
       <Box
         sx={{
           bgcolor: 'white',
           borderRadius: 2,
-          p: { xs: 1.2, sm: 1.5 },
-          mb: 1.5,
+          p: { xs: 1.5, sm: 2 },
           display: 'flex',
           alignItems: 'center',
-          gap: 1.5,
+          gap: 2,
           boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
         }}
       >
-        {/* スコアサークル（ボーダーリング） */}
+        {/* スコアサークル（conic-gradient リング） */}
         <Box
           sx={{
-            width: { xs: 56, sm: 64 },
-            height: { xs: 56, sm: 64 },
+            width: { xs: 64, sm: 72 },
+            height: { xs: 64, sm: 72 },
             borderRadius: '50%',
-            border: `4px solid ${color}`,
-            bgcolor: bgColor,
+            background: `conic-gradient(${color} ${progressPct}%, ${color}22 0%)`,
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}
         >
-          <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 900, lineHeight: 1, color }}>
-            {avg}
-          </Typography>
-          <Typography sx={{ fontSize: 8, color: '#bdbdbd', lineHeight: 1.2 }}>
-            /{SCALE_MAX}
-          </Typography>
+          <Box
+            sx={{
+              width: { xs: 50, sm: 56 },
+              height: { xs: 50, sm: 56 },
+              borderRadius: '50%',
+              bgcolor: bgColor,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 900, lineHeight: 1, color }}>
+              {avg}
+            </Typography>
+            <Typography sx={{ fontSize: 8, color: '#bdbdbd', lineHeight: 1.2 }}>
+              /{SCALE_MAX}
+            </Typography>
+          </Box>
         </Box>
 
         <Box flex={1} minWidth={0}>
@@ -216,52 +238,49 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
           <Typography sx={{ fontSize: { xs: 16, sm: 18 }, fontWeight: 800, color: '#212121', lineHeight: 1.2 }}>
             {scoreLabel(avg)}
           </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={progressPct}
-            sx={{
-              mt: 0.8,
-              height: 5,
-              borderRadius: 3,
-              bgcolor: `${color}22`,
-              '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 3 },
-            }}
-          />
         </Box>
       </Box>
 
-      {/* ── おでこ / ほお 指標 ── */}
-      <Grid container spacing={1} sx={{ flex: 1 }}>
+      {/* ── おでこ / ほお 指標（2×2 バブルグリッド） ── */}
+      <Grid container spacing={1.5}>
         {(['forehead', 'cheek'] as const).map((area) => (
           <Grid item xs={6} key={area}>
             <Box
               sx={{
                 bgcolor: 'white',
                 borderRadius: 2,
-                p: { xs: 1, sm: 1.2 },
-                height: '100%',
+                p: { xs: 1.5, sm: 2 },
                 boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                 borderTop: `3px solid ${area === 'forehead' ? '#e91e63' : '#7986cb'}`,
               }}
             >
               <Typography
                 sx={{
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 700,
                   color: area === 'forehead' ? '#e91e63' : '#7986cb',
-                  mb: 0.8,
+                  mb: 1.5,
                 }}
               >
                 {area === 'forehead' ? 'おでこ' : 'ほお'}
               </Typography>
-              {METRIC_ORDER.map((key) => (
-                <MetricRow
-                  key={key}
-                  label={METRIC_LABELS[key]}
-                  value={record[area][key]}
-                  color={METRIC_COLORS[key]}
-                />
-              ))}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: { xs: 1.5, sm: 2 },
+                  justifyItems: 'center',
+                }}
+              >
+                {METRIC_ORDER.map((key) => (
+                  <MetricBubble
+                    key={key}
+                    label={METRIC_LABELS[key]}
+                    value={record[area][key]}
+                    color={METRIC_COLORS[key]}
+                  />
+                ))}
+              </Box>
             </Box>
           </Grid>
         ))}
@@ -269,15 +288,15 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
 
       {/* ── 使用コスメタグ ── */}
       {(record.cosmetics.toner || record.cosmetics.essence || record.cosmetics.lotion || record.cosmetics.primer) && (
-        <Box mt={1} display="flex" flexWrap="wrap" gap={0.5}>
+        <Box display="flex" flexWrap="wrap" gap={0.75}>
           {[
             { label: '化粧水', value: record.cosmetics.toner },
             { label: '美容液', value: record.cosmetics.essence },
             { label: '乳液',   value: record.cosmetics.lotion },
             { label: '下地',   value: record.cosmetics.primer },
           ].filter((c) => c.value).map((c) => (
-            <Box key={c.label} sx={{ bgcolor: '#fce4ec', borderRadius: 1.5, px: 1, py: 0.3 }}>
-              <Typography sx={{ fontSize: 9, color: '#c2185b' }}>
+            <Box key={c.label} sx={{ bgcolor: '#fce4ec', borderRadius: 1.5, px: 1.2, py: 0.4 }}>
+              <Typography sx={{ fontSize: 10, color: '#c2185b' }}>
                 {c.label}: {c.value}
               </Typography>
             </Box>

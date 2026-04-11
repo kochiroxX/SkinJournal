@@ -19,12 +19,12 @@ interface Props {
 const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
-/** スコア 0〜100 を色に変換（低→高: グレー→ピンクグラデーション） */
-function scoreToColor(avg: number): string {
-  if (avg >= 80) return '#ad1457';
-  if (avg >= 65) return '#e91e63';
-  if (avg >= 50) return '#f48fb1';
-  if (avg >= 35) return '#fce4ec';
+/** 健康スコア 0〜100（適正範囲正規化済み）を色に変換 */
+function scoreToColor(score: number): string {
+  if (score >= 75) return '#ad1457';
+  if (score >= 55) return '#e91e63';
+  if (score >= 35) return '#f48fb1';
+  if (score >= 15) return '#fce4ec';
   return '#f5f5f5';
 }
 
@@ -127,7 +127,7 @@ export default function CalendarHeatmap({ records }: Props) {
                     return (
                       <Tooltip
                         key={row}
-                        title={hasRecord ? `${formatFullDate(date)}: 平均スコア ${score!.toFixed(1)}` : formatFullDate(date)}
+                        title={hasRecord ? `${formatFullDate(date)}: 健康スコア ${score!.toFixed(1)}` : formatFullDate(date)}
                         arrow
                       >
                         <Box

@@ -7,7 +7,7 @@
 // [Fix] エクスポート失敗時にアイコンを赤くしてユーザーに通知する。
 // ============================================================
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, CircularProgress, IconButton, Tooltip } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -26,6 +26,16 @@ type ButtonState = 'idle' | 'loading' | 'error';
 export default function ChartExportButton({ targetRef, filename = 'skin-journal-chart' }: Props) {
   const [downloadState, setDownloadState] = useState<ButtonState>('idle');
   const [copyState, setCopyState]         = useState<ButtonState>('idle');
+
+  // アンマウント時にタイマーをクリアしてメモリリークを防ぐ
+  const downloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (downloadTimerRef.current) clearTimeout(downloadTimerRef.current);
+      if (copyTimerRef.current)     clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const capture = async (): Promise<string | null> => {
     if (!targetRef.current) return null;
@@ -49,7 +59,7 @@ export default function ChartExportButton({ targetRef, filename = 'skin-journal-
       console.error('Download failed:', err);
       setDownloadState('error');
       // [Fix] 3秒後にアイコンをリセット
-      setTimeout(() => setDownloadState('idle'), 3000);
+      downloadTimerRef.current = setTimeout(() => setDownloadState('idle'), 3000);
     }
   };
 
@@ -75,7 +85,7 @@ export default function ChartExportButton({ targetRef, filename = 'skin-journal-
       console.error('Copy failed:', err);
       setCopyState('error');
       // [Fix] 3秒後にアイコンをリセット
-      setTimeout(() => setCopyState('idle'), 3000);
+      copyTimerRef.current = setTimeout(() => setCopyState('idle'), 3000);
     }
   };
 

@@ -25,19 +25,41 @@ export function avgMetrics(
 }
 
 /**
- * [Add] PBI-40/41: レコード群から「日付 → 平均スコア（全8指標の平均）」を正確に算出する。
- * 同一日に複数レコードがある場合、加重平均ではなく件数ベースの算術平均を使用する。
- * ※ (prev + avg) / 2 方式では3件目以降の算出結果が誤るため別途 accumulator を管理する。
+ * 指標を適正範囲 [min, max] を基準に 0-100 で正規化する。
+ * 上限を超えても 100 にクランプ（超過ペナルティは設けない）。
+ */
+function normalizeScore(value: number, min: number, max: number): number {
+  return Math.min(100, Math.max(0, (value - min) / (max - min) * 100));
+}
+
+/**
+ * 1レコードの健康スコア（0-100）を各指標の適正範囲で算出する。
+ *   tone:        20-70（高いほど良い）
+ *   moisture:    30-50（低めは乾燥、高めは過剰）
+ *   oil:         30-50（低めは乾燥、高めは過剰）
+ *   elasticity:  30-70（高いほど良い）
+ */
+function recordHealthScore(r: NormalizedRecord): number {
+  const score = (v: number, min: number, max: number) => normalizeScore(v, min, max);
+  return (
+    score(r.forehead.tone,        20, 70) + score(r.forehead.moisture, 30, 50) +
+    score(r.forehead.oil,         30, 50) + score(r.forehead.elasticity, 30, 70) +
+    score(r.cheek.tone,           20, 70) + score(r.cheek.moisture,   30, 50) +
+    score(r.cheek.oil,            30, 50) + score(r.cheek.elasticity,  30, 70)
+  ) / 8;
+}
+
+/**
+ * [Add] PBI-40/41: レコード群から「日付 → 健康スコア（0-100）」を算出する。
+ * 各指標は適正範囲で正規化し、同一日複数レコードは算術平均を使用する。
  */
 export function buildScoreByDate(records: NormalizedRecord[]): Map<string, number> {
   const acc = new Map<string, { sum: number; count: number }>();
   for (const r of records) {
     const date = r.timestamp.slice(0, 10);
-    const avg =
-      (r.forehead.tone + r.forehead.moisture + r.forehead.oil + r.forehead.elasticity +
-       r.cheek.tone    + r.cheek.moisture    + r.cheek.oil    + r.cheek.elasticity) / 8;
+    const score = recordHealthScore(r);
     const prev = acc.get(date);
-    acc.set(date, prev ? { sum: prev.sum + avg, count: prev.count + 1 } : { sum: avg, count: 1 });
+    acc.set(date, prev ? { sum: prev.sum + score, count: prev.count + 1 } : { sum: score, count: 1 });
   }
   const result = new Map<string, number>();
   for (const [date, { sum, count }] of acc) {
