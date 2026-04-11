@@ -6,3 +6,16 @@ build/
 *.log
 .DS_Store
 packages/backend/credentials.json
+
+# ビルド成果物（バックエンドの public/ はフロントエンドのビルド出力）
+packages/backend/public/
+
+# Vite キャッシュ
+packages/frontend/.vite/
+
+# データファイル（ローカル実データ）
+packages/backend/data/skin_data.csv
+packages/backend/data/cosmetics_master.json
+
+# package-lock.json（npm workspaces ではルートのみ管理）
+package-lock.json

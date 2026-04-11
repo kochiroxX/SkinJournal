@@ -90,7 +90,8 @@ SkinJournal/
 │               │   ├── ScoreChip.tsx        # スコア表示チップ（色分け）
 │               │   ├── ConfirmDialog.tsx    # 削除確認ダイアログ
 │               │   ├── FilterToggleGroup.tsx # 汎用ラベルトグルグループ
-│               │   └── MetricSliderGroup.tsx # 肌指標スライダー（full/compact）
+│               │   ├── MetricSliderGroup.tsx # 肌指標スライダー（full/compact）
+│               │   └── ChartExportButton.tsx # PBI-43: グラフ個別PNG保存・コピー
 │               ├── InputForm/       # PBI-01: 高機能入力フォーム
 │               │   ├── index.tsx    # フォーム全体・送信ロジック
 │               │   ├── SkinMetricsInput.tsx   # 肌指標スライダー（MetricSliderGroup をラップ）
@@ -98,12 +99,15 @@ SkinJournal/
 │               │   └── ExternalFactorsInput.tsx # ライフログ入力
 │               ├── Dashboard/       # PBI-03: インタラクティブ・ダッシュボード
 │               │   ├── index.tsx    # サマリーカード・タブ切り替え
-│               │   ├── TrendChart.tsx          # 推移グラフ（Recharts）
+│               │   ├── TrendChart.tsx          # 推移グラフ（折れ線 / 面グラフ切り替え）
 │               │   ├── SkinRadarChart.tsx       # レーダーチャート（最新肌状態）
 │               │   ├── CosmeticsChart.tsx       # 化粧品別平均スコア比較
 │               │   ├── FactorsChart.tsx         # 外部要因と肌状態の相関グラフ
 │               │   ├── PeriodSelector.tsx       # 期間トグル（週/月/全期間）
-│               │   └── SnsExportButton.tsx      # SNS用画像書き出し
+│               │   ├── CalendarHeatmap.tsx      # PBI-40: 過去365日カレンダービュー
+│               │   └── WeeklyHeatmap.tsx        # PBI-41: 週次ヒートマップ（曜日×週）
+│               ├── SnsPage/         # PBI-37: SNS出力画面（/sns）
+│               │   └── index.tsx    # グラフ個別エクスポート・キャプション自動生成
 │               ├── DataTable/       # PBI-02: データテーブルビュー
 │               │   └── index.tsx    # 正規化済みデータ一覧・編集・削除
 │               └── CosmeticsMasterEditor/  # 化粧品マスタ編集画面（/settings）
