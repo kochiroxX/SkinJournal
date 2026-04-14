@@ -90,6 +90,140 @@ export class CsvRepository {
     if (!fs.existsSync(this.csvPath)) {
       fs.writeFileSync(this.csvPath, CSV_HEADERS.join(',') + '\n', 'utf-8');
       logger.info(`Created new CSV file: ${this.csvPath}`);
+    } else {
+      this.migrateIfNeeded();
+    }
+  }
+
+  /**
+   * PBI-33 以前に作成された CSV には primer 列がない。
+   * ヘッダーに primer が含まれていなければ全行を読み込み直して書き直す。
+   *
+   * 移行処理の注意点:
+   * - 16列行（PBI-33以前）: lotion の後に primer='' を挿入して17列に変換する
+   * - 17列行（PBI-33以降、旧ヘッダーで追記されたもの）: すでに正しい順序なのでそのまま使う
+   * csv-parse に渡す前に行ごとのフィールド数を確認し、ヘッダー列名とのズレを防ぐ。
+   */
+  private migrateIfNeeded(): void {
+    const content = fs.readFileSync(this.csvPath, 'utf-8');
+    const lines = content.split('\n').filter((l) => l.trim().length > 0);
+    const header = lines[0] ?? '';
+    if (header.includes('primer')) return;
+
+    logger.info('Migrating CSV: adding primer column');
+
+    const NEW_COL_COUNT = 17;
+
+    // lotion の旧インデックス（0始まり）: 11番目
+    const LOTION_IDX = 11;
+
+    const migrated: RawSheetRow[] = [];
+
+    for (const line of lines.slice(1)) {
+      // CSV フィールドを素朴に分割（引用符なしフィールドのみ想定）
+      const fields = line.split(',');
+
+      let f: string[];
+      if (fields.length >= NEW_COL_COUNT) {
+        // すでに17列で書かれた行: そのまま使用（primer は field[12]）
+        f = fields;
+      } else {
+        // 16列以下の古い行: lotion の直後に primer='' を挿入して17列に変換
+        f = [...fields.slice(0, LOTION_IDX + 1), '', ...fields.slice(LOTION_IDX + 1)];
+      }
+
+      migrated.push({
+        timestamp:          f[0]  ?? '',
+        foreheadTone:       f[1]  ?? '0',
+        foreheadMoisture:   f[2]  ?? '0',
+        foreheadOil:        f[3]  ?? '0',
+        foreheadElasticity: f[4]  ?? '0',
+        cheekTone:          f[5]  ?? '0',
+        cheekMoisture:      f[6]  ?? '0',
+        cheekOil:           f[7]  ?? '0',
+        cheekElasticity:    f[8]  ?? '0',
+        toner:              f[9]  ?? '',
+        essence:            f[10] ?? '',
+        lotion:             f[11] ?? '',
+        primer:             f[12] ?? '',
+        businessTrip:       f[13] ?? 'FALSE',
+        alcohol:            f[14] ?? 'FALSE',
+        sleepHours:         f[15] ?? '0',
+        notes:              f[16] ?? '',
+      });
+    }
+
+    this.writeAllRows(migrated);
+    logger.info(`Migration complete: ${migrated.length} rows rewritten with primer column`);
+
+    // 旧ヘッダーで書き込まれた17列行（カラムシフトが生じた行）を修正する
+    this.repairShiftedRows();
+  }
+
+  /**
+   * マイグレーション後に businessTrip が空文字、sleepHours が 'FALSE' になっている行を修復する。
+   * これは旧16列ヘッダー下で新17列データが追記された場合に発生するシフトの副作用。
+   * 具体的なパターン: businessTrip='' かつ sleepHours が数値でない場合
+   *   → alcohol → businessTrip, sleepHours(旧alcohol) → alcohol, notes(旧sleepHours) → sleepHours, notes='' に補正
+   */
+  private repairShiftedRows(): void {
+    const content = fs.readFileSync(this.csvPath, 'utf-8');
+    const rows = parse(content, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    }) as Record<string, string>[];
+
+    let repaired = 0;
+    const fixed: RawSheetRow[] = rows.map((r) => {
+      const sleepIsNaN = isNaN(parseFloat(r['sleepHours'] ?? ''));
+      const btIsEmpty  = (r['businessTrip'] ?? '') === '';
+      if (btIsEmpty && sleepIsNaN) {
+        repaired++;
+        return {
+          timestamp:          r['timestamp']          ?? '',
+          foreheadTone:       r['foreheadTone']       ?? '0',
+          foreheadMoisture:   r['foreheadMoisture']   ?? '0',
+          foreheadOil:        r['foreheadOil']        ?? '0',
+          foreheadElasticity: r['foreheadElasticity'] ?? '0',
+          cheekTone:          r['cheekTone']          ?? '0',
+          cheekMoisture:      r['cheekMoisture']      ?? '0',
+          cheekOil:           r['cheekOil']           ?? '0',
+          cheekElasticity:    r['cheekElasticity']    ?? '0',
+          toner:              r['toner']              ?? '',
+          essence:            r['essence']            ?? '',
+          lotion:             r['lotion']             ?? '',
+          primer:             r['primer']             ?? '',
+          businessTrip:       r['alcohol']            ?? 'FALSE', // alcohol は元 businessTrip
+          alcohol:            r['sleepHours']         ?? 'FALSE', // sleepHours は元 alcohol
+          sleepHours:         r['notes']              ?? '0',     // notes は元 sleepHours
+          notes:              '',                                  // 元 notes は空だった
+        };
+      }
+      return {
+        timestamp:          r['timestamp']          ?? '',
+        foreheadTone:       r['foreheadTone']       ?? '0',
+        foreheadMoisture:   r['foreheadMoisture']   ?? '0',
+        foreheadOil:        r['foreheadOil']        ?? '0',
+        foreheadElasticity: r['foreheadElasticity'] ?? '0',
+        cheekTone:          r['cheekTone']          ?? '0',
+        cheekMoisture:      r['cheekMoisture']      ?? '0',
+        cheekOil:           r['cheekOil']           ?? '0',
+        cheekElasticity:    r['cheekElasticity']    ?? '0',
+        toner:              r['toner']              ?? '',
+        essence:            r['essence']            ?? '',
+        lotion:             r['lotion']             ?? '',
+        primer:             r['primer']             ?? '',
+        businessTrip:       r['businessTrip']       ?? 'FALSE',
+        alcohol:            r['alcohol']            ?? 'FALSE',
+        sleepHours:         r['sleepHours']         ?? '0',
+        notes:              r['notes']              ?? '',
+      };
+    });
+
+    if (repaired > 0) {
+      this.writeAllRows(fixed);
+      logger.info(`Repaired ${repaired} shifted rows`);
     }
   }
 
