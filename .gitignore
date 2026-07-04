@@ -19,3 +19,6 @@ packages/backend/data/cosmetics_master.json
 
 # package-lock.json（npm workspaces ではルートのみ管理）
 package-lock.json
+
+# Claude Code ワークツリー（エージェント用一時ディレクトリ）
+.claude/worktrees/
