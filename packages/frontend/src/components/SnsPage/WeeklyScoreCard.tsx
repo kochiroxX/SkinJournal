@@ -1,9 +1,17 @@
 import { useRef } from 'react';
 import { Box, LinearProgress, Typography } from '@mui/material';
-import { NormalizedRecord } from '../../types';
+import { NormalizedRecord, SkinMetrics } from '../../types';
 import { CardTheme, CardSize, CARD_THEMES, RANK_CONFIG, getScoreRank } from '../../constants';
 import { recordHealthScore } from '../../utils/metrics';
 import ChartExportButton from '../shared/ChartExportButton';
+
+const METRIC_RANGE: Record<keyof SkinMetrics, [number, number]> = {
+  tone: [20, 70], moisture: [30, 50], oil: [30, 50], elasticity: [30, 70],
+};
+function normalizeMetric(value: number, key: keyof SkinMetrics): number {
+  const [min, max] = METRIC_RANGE[key];
+  return Math.min(100, Math.max(0, (value - min) / (max - min) * 100));
+}
 
 interface Props {
   records: NormalizedRecord[];
@@ -50,7 +58,7 @@ export default function WeeklyScoreCard({ records, theme, size: _size }: Props) 
 
   const metricAvgs = METRIC_ROWS.map(({ label, area, key }) => {
     const avg = weekRecords.reduce((s, r) => s + r[area][key], 0) / weekRecords.length;
-    return { label, avg };
+    return { label, avg, key };
   });
 
   return (
@@ -81,7 +89,7 @@ export default function WeeklyScoreCard({ records, theme, size: _size }: Props) 
         </Box>
 
         <Box display="flex" flexDirection="column" gap={1}>
-          {metricAvgs.map(({ label, avg }) => (
+          {metricAvgs.map(({ label, avg, key }) => (
             <Box key={label}>
               <Box display="flex" justifyContent="space-between" mb={0.3}>
                 <Typography sx={{ fontSize: 11, color: t.subTextColor }}>{label}</Typography>
@@ -89,7 +97,7 @@ export default function WeeklyScoreCard({ records, theme, size: _size }: Props) 
               </Box>
               <LinearProgress
                 variant="determinate"
-                value={Math.min(100, avg)}
+                value={normalizeMetric(avg, key)}
                 sx={{
                   height: 6,
                   borderRadius: 3,

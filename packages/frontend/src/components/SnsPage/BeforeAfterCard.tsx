@@ -36,7 +36,8 @@ export default function BeforeAfterCard({ records, theme, size: _size }: Props) 
   cutoff.setDate(now.getDate() - days);
 
   const filtered = records.filter((r) => new Date(r.timestamp) >= cutoff);
-  const sorted = (filtered.length >= 2 ? filtered : [...records])
+  const hasSufficientFiltered = filtered.length >= 2;
+  const sorted = (hasSufficientFiltered ? filtered : [...records])
     .slice()
     .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
@@ -97,6 +98,11 @@ export default function BeforeAfterCard({ records, theme, size: _size }: Props) 
         }}
       >
         <Box sx={{ px: 3, pt: 2, pb: 1, textAlign: 'center' }}>
+          {!hasSufficientFiltered && (
+            <Typography sx={{ fontSize: 10, color: t.subTextColor, mb: 1 }}>
+              ※ 選択期間内のデータが不足のため全期間で比較
+            </Typography>
+          )}
           <Typography sx={{ fontSize: 13, color: t.primaryColor, fontWeight: 700 }}>
             {catchCopy}
           </Typography>

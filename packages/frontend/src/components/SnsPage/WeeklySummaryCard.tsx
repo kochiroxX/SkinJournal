@@ -25,10 +25,12 @@ export default function WeeklySummaryCard({ records, theme, size }: Props) {
   const twoWeeksAgo = new Date(now);
   twoWeeksAgo.setDate(now.getDate() - 14);
 
-  const weekRecords = records.filter((r) => {
-    const d = new Date(r.timestamp);
-    return d >= weekAgo && d <= now;
-  });
+  const weekRecords = records
+    .filter((r) => {
+      const d = new Date(r.timestamp);
+      return d >= weekAgo && d <= now;
+    })
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   const prevWeekRecords = records.filter((r) => {
     const d = new Date(r.timestamp);
     return d >= twoWeeksAgo && d < weekAgo;

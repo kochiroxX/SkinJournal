@@ -81,16 +81,21 @@ export default function CosmeticsRankingCard({ records, theme, size: _size }: Pr
           {COSMETIC_FIELD_LABELS[category]} ランキング
         </Typography>
 
-        {ranked.length < 3 ? (
+        {ranked.length === 0 && (
           <Box textAlign="center" py={3}>
             <Typography sx={{ fontSize: 14, color: t.subTextColor }}>
-              データ不足（各5件以上必要）
-            </Typography>
-            <Typography sx={{ fontSize: 12, color: t.subTextColor, mt: 0.5 }}>
-              現在 {ranked.length} 件のコスメが対象
+              データ不足（各コスメ5件以上の記録が必要）
             </Typography>
           </Box>
-        ) : (
+        )}
+        {ranked.length > 0 && ranked.length < 3 && (
+          <Box textAlign="center" py={3}>
+            <Typography sx={{ fontSize: 14, color: t.subTextColor }}>
+              ランキング表示には3種類以上必要です（現在 {ranked.length} 種類）
+            </Typography>
+          </Box>
+        )}
+        {ranked.length >= 3 && (
           <Box display="flex" alignItems="flex-end" justifyContent="center" gap={2}>
             {podiumOrder.map((item, podiumIdx) => {
               const rankIdx = podiumIndexMap[podiumIdx];

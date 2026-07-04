@@ -57,17 +57,13 @@ function groupByMonth(days: string[]): { month: string; dates: string[] }[] {
 export default function CompactCalendarHeatmap({ records, theme, size: _size }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const t = CARD_THEMES[theme];
-  const scoreByDate = buildScoreByDate(records);
-
-  const allScores = Array.from(scoreByDate.entries());
-  const bestDate = allScores.length > 0
-    ? allScores.reduce((a, b) => b[1] > a[1] ? b : a)[0]
-    : null;
-  const worstDate = allScores.length > 0
-    ? allScores.reduce((a, b) => b[1] < a[1] ? b : a)[0]
-    : null;
 
   const days = buildDays(90);
+  const scoreByDate = buildScoreByDate(records);
+  const daysSet = new Set(days);
+  const viewScores = Array.from(scoreByDate.entries()).filter(([d]) => daysSet.has(d));
+  const bestDate = viewScores.length > 0 ? viewScores.reduce((a, b) => b[1] > a[1] ? b : a)[0] : null;
+  const worstDate = viewScores.length > 0 ? viewScores.reduce((a, b) => b[1] < a[1] ? b : a)[0] : null;
   const months = groupByMonth(days);
   const cellSize = 18;
   const cellGap = 3;

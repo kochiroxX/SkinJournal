@@ -4,6 +4,7 @@ import { recordHealthScore } from '../utils/metrics';
 
 export function useNotifications(records: NormalizedRecord[]) {
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
 
@@ -28,7 +29,10 @@ export function useNotifications(records: NormalizedRecord[]) {
     }
 
     // トリガー2: 前日比±10点
-    const prevScore = recordHealthScore(records[records.length - 2]);
+    const latestDate = latest.timestamp.slice(0, 10);
+    const prevRecord = [...records].slice(0, -1).reverse().find(r => r.timestamp.slice(0, 10) < latestDate);
+    if (!prevRecord) return;
+    const prevScore = recordHealthScore(prevRecord);
     const diff = latestScore - prevScore;
     if (Math.abs(diff) >= 10) {
       new Notification(diff > 0 ? '📈 肌コンディションが大幅改善！' : '📉 肌コンディションが低下', {
