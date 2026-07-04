@@ -37,7 +37,7 @@ import WeeklyHeatmap from './WeeklyHeatmap';
 // [Refactor] PBI-14: 共有コンポーネントを使用
 import LoadingBox from '../shared/LoadingBox';
 import PageHeader from '../shared/PageHeader';
-import { useSkinData, useCosmeticsMaster } from '../../hooks/useSkinData';
+import { useSkinData } from '../../hooks/useSkinData';
 import { PeriodFilter } from '../../types';
 import { SCALE_MAX, getScoreColor } from '../../constants';
 
@@ -50,9 +50,6 @@ export default function Dashboard() {
   const { records, loading, error } = useSkinData(period);
   // [Add] PBI-40/41: カレンダー・ヒートマップは全期間データを使用
   const { records: allRecords } = useSkinData('all');
-  // [Add] #47: 化粧品マスターデータ（CosmeticsRadarChart に渡す）
-  const { master } = useCosmeticsMaster();
-
   const latestRecord = records.length > 0 ? records[records.length - 1] : null;
 
   return (
@@ -139,7 +136,7 @@ export default function Dashboard() {
                         <ToggleButtonGroup
                           value={cosmeticsMode}
                           exclusive
-                          onChange={(_, v) => { if (v === 'bar' || v === 'radar') setCosmeticsMode(v); }}
+                          onChange={(_, v: 'bar' | 'radar' | null) => { if (v) setCosmeticsMode(v); }}
                           size="small"
                         >
                           <ToggleButton value="bar"><BarChartIcon fontSize="small" /></ToggleButton>
@@ -149,7 +146,7 @@ export default function Dashboard() {
                       {cosmeticsMode === 'bar' ? (
                         <CosmeticsChart records={records} />
                       ) : (
-                        <CosmeticsRadarChart records={records} master={master} />
+                        <CosmeticsRadarChart records={records} />
                       )}
                     </>
                   )}
@@ -161,7 +158,7 @@ export default function Dashboard() {
                         <ToggleButtonGroup
                           value={factorsMode}
                           exclusive
-                          onChange={(_, v) => { if (v === 'bar' || v === 'radar') setFactorsMode(v); }}
+                          onChange={(_, v: 'bar' | 'radar' | null) => { if (v) setFactorsMode(v); }}
                           size="small"
                         >
                           <ToggleButton value="bar"><BarChartIcon fontSize="small" /></ToggleButton>

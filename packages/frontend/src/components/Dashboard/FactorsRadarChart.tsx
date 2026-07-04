@@ -11,6 +11,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Legend,
+  Tooltip,
   ResponsiveContainer,
 } from 'recharts';
 import { Box } from '@mui/material';
@@ -86,10 +87,6 @@ export default function FactorsRadarChart({ records }: FactorsRadarChartProps) {
 
   const { data, groups } = buildGroupsData(records, mode, area);
 
-  if (records.length === 0) {
-    return <EmptyStateBox />;
-  }
-
   return (
     <Box>
       <Box display="flex" gap={2} flexWrap="wrap" alignItems="center" justifyContent="space-between" mb={2}>
@@ -109,6 +106,7 @@ export default function FactorsRadarChart({ records }: FactorsRadarChartProps) {
               <PolarGrid />
               <PolarAngleAxis dataKey="metric" tick={{ fontSize: 13 }} />
               <PolarRadiusAxis angle={90} domain={[0, SCALE_MAX]} tickCount={6} tick={{ fontSize: 10 }} />
+              <Tooltip />
               {groups.map((group, i) => (
                 <Radar
                   key={group}

@@ -11,10 +11,11 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Legend,
+  Tooltip,
   ResponsiveContainer,
 } from 'recharts';
 import { Box } from '@mui/material';
-import { NormalizedRecord, CosmeticsMaster, SkinMetrics } from '../../types';
+import { NormalizedRecord, SkinMetrics } from '../../types';
 import { METRIC_LABELS, SCALE_MAX } from '../../constants';
 import EmptyStateBox from '../shared/EmptyStateBox';
 import FilterToggleGroup from '../shared/FilterToggleGroup';
@@ -22,7 +23,6 @@ import ChartExportButton from '../shared/ChartExportButton';
 
 export interface CosmeticsRadarChartProps {
   records: NormalizedRecord[];
-  master: CosmeticsMaster;
 }
 
 const CATEGORY_FIELD_MAP = {
@@ -125,6 +125,7 @@ export default function CosmeticsRadarChart({ records }: CosmeticsRadarChartProp
             <PolarGrid />
             <PolarAngleAxis dataKey="metric" tick={{ fontSize: 13 }} />
             <PolarRadiusAxis angle={90} domain={[0, SCALE_MAX]} tickCount={6} tick={{ fontSize: 10 }} />
+            <Tooltip />
             {brands.map((brand, i) => (
               <Radar
                 key={brand}
