@@ -39,7 +39,7 @@ function normalizeScore(value: number, min: number, max: number): number {
  *   oil:         30-50（低めは乾燥、高めは過剰）
  *   elasticity:  30-70（高いほど良い）
  */
-function recordHealthScore(r: NormalizedRecord): number {
+export function recordHealthScore(r: NormalizedRecord): number {
   const score = (v: number, min: number, max: number) => normalizeScore(v, min, max);
   return (
     score(r.forehead.tone,        20, 70) + score(r.forehead.moisture, 30, 50) +

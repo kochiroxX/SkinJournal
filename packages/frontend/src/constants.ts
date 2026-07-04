@@ -57,3 +57,66 @@ export function getScoreColor(value: number): 'success' | 'warning' | 'error' {
   if (value >= 40) return 'warning';
   return 'error';
 }
+
+// カードテーマ
+export type CardTheme = 'minimal' | 'pop' | 'luxury' | 'pastel';
+export const CARD_THEMES: Record<CardTheme, {
+  label: string;
+  chipColor: string;
+  background: string;
+  primaryColor: string;
+  textColor: string;
+  subTextColor: string;
+  borderColor: string;
+  fontWeight: number;
+}> = {
+  minimal: {
+    label: 'ミニマル', chipColor: '#F5F5F5', background: '#FFFFFF',
+    primaryColor: '#424242', textColor: '#212121', subTextColor: '#757575',
+    borderColor: '#E0E0E0', fontWeight: 400,
+  },
+  pop: {
+    label: 'ポップ', chipColor: '#FF6B9D', background: 'linear-gradient(135deg, #FF6B9D 0%, #FFB347 100%)',
+    primaryColor: '#FFFFFF', textColor: '#FFFFFF', subTextColor: 'rgba(255,255,255,0.85)',
+    borderColor: 'rgba(255,255,255,0.4)', fontWeight: 700,
+  },
+  luxury: {
+    label: 'ラグジュアリー', chipColor: '#1A1A2E', background: 'linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%)',
+    primaryColor: '#FFD700', textColor: '#F5F5F5', subTextColor: '#B0B0B0',
+    borderColor: '#FFD700', fontWeight: 500,
+  },
+  pastel: {
+    label: 'パステル', chipColor: '#FFB3C6', background: 'linear-gradient(135deg, #FFB3C6 0%, #C9B8FF 50%, #B8E4FF 100%)',
+    primaryColor: '#6B4C93', textColor: '#4A3060', subTextColor: '#7B6B8D',
+    borderColor: 'rgba(107,76,147,0.3)', fontWeight: 500,
+  },
+};
+
+// カードサイズ
+export type CardSize = 'square' | 'story' | 'wide';
+export const CARD_SIZES: Record<CardSize, {
+  label: string; icon: string; width: number; height: number; description: string;
+}> = {
+  square: { label: '正方形', icon: '⬛', width: 600, height: 600,  description: 'Instagram / X' },
+  story:  { label: '縦長',   icon: '📱', width: 450, height: 800,  description: 'Story / TikTok' },
+  wide:   { label: '横長',   icon: '🖥',  width: 800, height: 450,  description: 'X ヘッダー' },
+};
+
+// スコアランク
+export const RANK_CONFIG = {
+  S: { min: 90, color: '#FFD700', label: 'PERFECT' },
+  A: { min: 75, color: '#C0C0C0', label: 'GREAT' },
+  B: { min: 60, color: '#CD7F32', label: 'GOOD' },
+  C: { min: 45, color: '#78909C', label: 'FAIR' },
+  D: { min: 0,  color: '#546E7A', label: 'KEEP UP' },
+} as const;
+
+export type ScoreRank = keyof typeof RANK_CONFIG;
+
+export const getScoreRank = (score: number): ScoreRank => {
+  if (score >= 90) return 'S';
+  if (score >= 75) return 'A';
+  if (score >= 60) return 'B';
+  if (score >= 45) return 'C';
+  return 'D';
+};
