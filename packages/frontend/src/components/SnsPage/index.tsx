@@ -1,6 +1,7 @@
 // ============================================================
 // [Add] PBI-37: SNS出力用画面（Twitter 最適化レイアウト）
 // [Add] PBI-38: 生成AI向けプロンプト生成
+// [Add] PBI-54: テーマ・サイズプリセット統合
 // ============================================================
 
 import { useRef, useState } from 'react';
@@ -10,10 +11,13 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Grid,
   IconButton,
   InputAdornment,
   OutlinedInput,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -22,24 +26,32 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SpaIcon from '@mui/icons-material/Spa';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import SkinRadarChart from '../Dashboard/SkinRadarChart';
 import TrendChart from '../Dashboard/TrendChart';
 import CalendarHeatmap from '../Dashboard/CalendarHeatmap';
 import LoadingBox from '../shared/LoadingBox';
 import PageHeader from '../shared/PageHeader';
 import ChartExportButton from '../shared/ChartExportButton';
-import { useSkinData } from '../../hooks/useSkinData';
+import { useSkinData, useCosmeticsMaster } from '../../hooks/useSkinData';
+import { useNotifications } from '../../hooks/useNotifications';
 import { NormalizedRecord, SkinMetrics } from '../../types';
 import { formatFullDate } from '../../utils/format';
-import { METRIC_COLORS, METRIC_LABELS, SCALE_MAX } from '../../constants';
+import { METRIC_COLORS, METRIC_LABELS, SCALE_MAX, CARD_THEMES, CARD_SIZES, CardTheme, CardSize } from '../../constants';
+import WeeklySummaryCard from './WeeklySummaryCard';
+import WeeklyScoreCard from './WeeklyScoreCard';
+import BeforeAfterCard from './BeforeAfterCard';
+import CompactCalendarHeatmap from './CompactCalendarHeatmap';
+import CosmeticsRankingCard from './CosmeticsRankingCard';
+import FactorsInsightCard from './FactorsInsightCard';
 
 // ============================================================
 // スコアに応じた色・ラベルを返すユーティリティ（スコア範囲 20-70 を想定）
 // ============================================================
 function scoreColor(v: number): string {
-  if (v >= 60) return '#388e3c'; // 落ち着いたグリーン
-  if (v >= 45) return '#e65100'; // 落ち着いたオレンジ
-  return '#c62828';               // 落ち着いたレッド
+  if (v >= 60) return '#388e3c';
+  if (v >= 45) return '#e65100';
+  return '#c62828';
 }
 function scoreBgColor(v: number): string {
   if (v >= 60) return '#e8f5e9';
@@ -55,7 +67,6 @@ function scoreLabel(avg: number): string {
 
 // ============================================================
 // [Add] PBI-38: 生成AI向けプロンプト生成
-// ChatGPT / Claude 等に貼り付けてSNS投稿文を作成させるためのプロンプト
 // ============================================================
 function generateAiPrompt(record: NormalizedRecord): string {
   const date = formatFullDate(record.timestamp);
@@ -101,6 +112,37 @@ function generateAiPrompt(record: NormalizedRecord): string {
     `　肌色: ${record.cheek.tone}　水分量: ${record.cheek.moisture}　油分量: ${record.cheek.oil}　弾性力: ${record.cheek.elasticity}`,
     ...(cosmeticSection.length > 0 ? ['', '使用コスメ', ...cosmeticSection] : []),
     ...(lifelogSection.length > 0 ? ['', 'ライフログ', ...lifelogSection] : []),
+  ].join('\n');
+}
+
+function generateWeeklyAiPrompt(records: NormalizedRecord[]): string {
+  if (records.length === 0) return '';
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+  const weekRecords = records.filter((r) => new Date(r.timestamp) >= weekAgo);
+  if (weekRecords.length === 0) return '';
+
+  const avgScore = Math.round(
+    weekRecords.reduce((s, r) =>
+      s + (r.forehead.tone + r.forehead.moisture + r.forehead.oil + r.forehead.elasticity +
+           r.cheek.tone + r.cheek.moisture + r.cheek.oil + r.cheek.elasticity) / 8,
+    0) / weekRecords.length
+  );
+
+  return [
+    'あなたはSNS投稿の文章作成アシスタントです。',
+    '以下の週間肌ケアデータをもとに、Twitter（X）への週次投稿文を作成してください。',
+    '',
+    '【要件】',
+    '・前向きで振り返りを促すトーン',
+    '・絵文字を適度に使用',
+    '・140文字以内（日本語）',
+    '・関連ハッシュタグを末尾に3〜5個追加',
+    '',
+    '【週間データ】',
+    `記録件数: ${weekRecords.length}件`,
+    `週間平均スコア: ${avgScore} / ${SCALE_MAX}（${scoreLabel(avgScore)}）`,
   ].join('\n');
 }
 
@@ -159,8 +201,6 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
   );
   const color   = scoreColor(avg);
   const bgColor = scoreBgColor(avg);
-
-  // 進捗バー用に 20-70 レンジを 0-100% に正規化
   const progressPct = Math.round(Math.min(100, Math.max(0, (avg - 20) / 50 * 100)));
 
   return (
@@ -199,7 +239,6 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
           boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
         }}
       >
-        {/* スコアサークル（conic-gradient リング） */}
         <Box
           sx={{
             width: { xs: 64, sm: 72 },
@@ -312,23 +351,35 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
 // ============================================================
 export default function SnsPage() {
   const { records, loading, error } = useSkinData('all');
+  const { master } = useCosmeticsMaster();
   const latestRecord = records.length > 0 ? records[records.length - 1] : null;
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const muiTheme = useTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // [Add] PBI-37: 日次/週次切り替え
+  const [mode, setMode] = useState<'daily' | 'weekly'>('daily');
+  // [Add] PBI-54: テーマ・サイズプリセット
+  const [theme, setTheme] = useState<CardTheme>('pastel');
+  const [size, setSize] = useState<CardSize>('square');
 
   const [prompt, setPrompt] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
   const summaryRef  = useRef<HTMLDivElement>(null);
-  // [Add] PBI-37: レーダーも正方形でエクスポート
   const radarRef    = useRef<HTMLDivElement>(null);
   const trendRef    = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  // [Add] PBI-38: 生成AIプロンプトを生成
+  // [Add] PBI-53: ブラウザ通知
+  const { requestPermission, permission } = useNotifications(records);
+
   const handleGeneratePrompt = () => {
-    if (!latestRecord) return;
-    setPrompt(generateAiPrompt(latestRecord));
+    if (mode === 'daily') {
+      if (!latestRecord) return;
+      setPrompt(generateAiPrompt(latestRecord));
+    } else {
+      setPrompt(generateWeeklyAiPrompt(records));
+    }
   };
 
   const handleCopyPrompt = async () => {
@@ -351,58 +402,250 @@ export default function SnsPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+      {/* ── [Add] PBI-37 / PBI-54: コントロールバー ── */}
+      <Card elevation={0} sx={{ mb: 3 }}>
+        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+          <Box display="flex" flexWrap="wrap" gap={2} alignItems="flex-start">
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>モード</Typography>
+              <ToggleButtonGroup
+                size="small"
+                value={mode}
+                exclusive
+                onChange={(_, v) => v && setMode(v as 'daily' | 'weekly')}
+              >
+                <ToggleButton value="daily" sx={{ fontSize: 12, px: 2 }}>日次</ToggleButton>
+                <ToggleButton value="weekly" sx={{ fontSize: 12, px: 2 }}>週次</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>テーマ</Typography>
+              <Box display="flex" flexWrap="wrap" gap={0.75}>
+                {(Object.keys(CARD_THEMES) as CardTheme[]).map((t) => (
+                  <Chip
+                    key={t}
+                    label={CARD_THEMES[t].label}
+                    size="small"
+                    onClick={() => setTheme(t)}
+                    sx={{
+                      bgcolor: theme === t ? CARD_THEMES[t].chipColor : undefined,
+                      fontWeight: theme === t ? 700 : 400,
+                      border: theme === t ? '2px solid #9c27b0' : '1px solid #e0e0e0',
+                      cursor: 'pointer',
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>サイズ</Typography>
+              <ToggleButtonGroup
+                size="small"
+                value={size}
+                exclusive
+                onChange={(_, v) => v && setSize(v as CardSize)}
+              >
+                {(Object.keys(CARD_SIZES) as CardSize[]).map((s) => (
+                  <ToggleButton key={s} value={s} sx={{ fontSize: 11, px: 1.5 }}>
+                    {CARD_SIZES[s].icon} {CARD_SIZES[s].label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Box>
+
+            {permission === 'default' && (
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>通知</Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<NotificationsIcon />}
+                  onClick={requestPermission}
+                >
+                  通知を許可
+                </Button>
+              </Box>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+
       {loading ? (
         <LoadingBox />
       ) : (
         <Grid container spacing={{ xs: 2, sm: 3 }}>
 
-          {/* ── スコアサマリー（正方形・SNS画像メイン） ── */}
-          {latestRecord && (
-            <Grid item xs={12} md={6}>
-              <Card elevation={0}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={600}>スコアサマリー</Typography>
-                      <Typography variant="caption" color="text.secondary">1:1 正方形（Twitter推奨）</Typography>
+          {mode === 'daily' ? (
+            <>
+              {/* ── 日次: スコアサマリー ── */}
+              {latestRecord && (
+                <Grid item xs={12} md={6}>
+                  <Card elevation={0}>
+                    <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight={600}>スコアサマリー</Typography>
+                          <Typography variant="caption" color="text.secondary">1:1 正方形（Twitter推奨）</Typography>
+                        </Box>
+                        <ChartExportButton targetRef={summaryRef} filename="sns-skin-summary" />
+                      </Box>
+                      <Box ref={summaryRef}>
+                        <ScoreSummaryCard record={latestRecord} />
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* ── 日次: レーダーチャート ── */}
+              <Grid item xs={12} md={6}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>最新肌状態</Typography>
+                        <Typography variant="caption" color="text.secondary">1:1 正方形</Typography>
+                      </Box>
+                      <ChartExportButton targetRef={radarRef} filename="sns-skin-radar" />
                     </Box>
-                    <ChartExportButton targetRef={summaryRef} filename="sns-skin-summary" />
-                  </Box>
-                  <Box ref={summaryRef}>
-                    <ScoreSummaryCard record={latestRecord} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+                    {/* [Add] PBI-37: 正方形コンテナ */}
+                    <Box
+                      ref={radarRef}
+                      sx={{
+                        aspectRatio: '1 / 1',
+                        bgcolor: '#fafafa',
+                        borderRadius: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        p: { xs: 1, sm: 2 },
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <SkinRadarChart record={latestRecord} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* ── 日次: 推移グラフ ── */}
+              <Grid item xs={12}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>推移グラフ</Typography>
+                        <Typography variant="caption" color="text.secondary">横長（16:9 相当）</Typography>
+                      </Box>
+                      <ChartExportButton targetRef={trendRef} filename="sns-skin-trend" />
+                    </Box>
+                    <Box ref={trendRef} sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
+                      <TrendChart records={records} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* ── 日次: 365日カレンダー ── */}
+              <Grid item xs={12}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>365日カレンダー</Typography>
+                        <Typography variant="caption" color="text.secondary">横長</Typography>
+                      </Box>
+                      <ChartExportButton targetRef={calendarRef} filename="sns-skin-calendar" />
+                    </Box>
+                    <Box ref={calendarRef} sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
+                      <CalendarHeatmap records={records} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* ── 日次: BeforeAfterCard ── */}
+              <Grid item xs={12} md={6}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Before / After 比較</Typography>
+                    <BeforeAfterCard records={records} theme={theme} size={size} />
+                  </CardContent>
+                </Card>
+              </Grid>
+            </>
+          ) : (
+            <>
+              {/* ── 週次: WeeklySummaryCard ── */}
+              <Grid item xs={12} md={6}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" fontWeight={600} mb={1.5}>週間サマリー</Typography>
+                    <WeeklySummaryCard records={records} theme={theme} size={size} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* ── 週次: TrendChart ── */}
+              <Grid item xs={12}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" fontWeight={600} mb={1}>推移グラフ（週次）</Typography>
+                    <TrendChart records={records} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* ── 週次: WeeklyScoreCard ── */}
+              <Grid item xs={12} md={6}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" fontWeight={600} mb={1.5}>週間スコアカード</Typography>
+                    <WeeklyScoreCard records={records} theme={theme} size={size} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* ── 週次: BeforeAfterCard ── */}
+              <Grid item xs={12} md={6}>
+                <Card elevation={0}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Before / After 比較</Typography>
+                    <BeforeAfterCard records={records} theme={theme} size={size} />
+                  </CardContent>
+                </Card>
+              </Grid>
+            </>
           )}
 
-          {/* ── レーダーチャート（正方形） ── */}
+          {/* ── 両モード共通: CompactCalendarHeatmap ── */}
           <Grid item xs={12} md={6}>
             <Card elevation={0}>
               <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight={600}>最新肌状態</Typography>
-                    <Typography variant="caption" color="text.secondary">1:1 正方形</Typography>
-                  </Box>
-                  <ChartExportButton targetRef={radarRef} filename="sns-skin-radar" />
-                </Box>
-                {/* [Add] PBI-37: 正方形コンテナ */}
-                <Box
-                  ref={radarRef}
-                  sx={{
-                    aspectRatio: '1 / 1',
-                    bgcolor: '#fafafa',
-                    borderRadius: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    p: { xs: 1, sm: 2 },
-                    overflow: 'hidden',
-                  }}
-                >
-                  <SkinRadarChart record={latestRecord} />
-                </Box>
+                <Typography variant="subtitle1" fontWeight={600} mb={1.5}>直近3ヶ月カレンダー</Typography>
+                <CompactCalendarHeatmap records={records} theme={theme} size={size} />
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* ── 両モード共通: CosmeticsRankingCard ── */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={0}>
+              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={1.5}>コスメランキング</Typography>
+                <CosmeticsRankingCard records={records} master={master} theme={theme} size={size} />
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* ── 両モード共通: FactorsInsightCard ── */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={0}>
+              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={1.5}>生活習慣インサイト</Typography>
+                <FactorsInsightCard records={records} theme={theme} size={size} />
               </CardContent>
             </Card>
           </Grid>
@@ -429,7 +672,7 @@ export default function SnsPage() {
                     size="small"
                     startIcon={<AutoAwesomeIcon />}
                     onClick={handleGeneratePrompt}
-                    disabled={!latestRecord}
+                    disabled={mode === 'daily' ? !latestRecord : records.length === 0}
                     variant="outlined"
                     fullWidth={isMobile}
                   >
@@ -456,47 +699,11 @@ export default function SnsPage() {
                   }
                   sx={{ fontSize: 13 }}
                 />
-                {!latestRecord && (
+                {mode === 'daily' && !latestRecord && (
                   <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
                     ※ 肌データを記録するとプロンプトを生成できます
                   </Typography>
                 )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* ── 推移グラフ（横長） ── */}
-          <Grid item xs={12}>
-            <Card elevation={0}>
-              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight={600}>推移グラフ</Typography>
-                    <Typography variant="caption" color="text.secondary">横長（16:9 相当）</Typography>
-                  </Box>
-                  <ChartExportButton targetRef={trendRef} filename="sns-skin-trend" />
-                </Box>
-                <Box ref={trendRef} sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
-                  <TrendChart records={records} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* ── 365日カレンダー（横長） ── */}
-          <Grid item xs={12}>
-            <Card elevation={0}>
-              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight={600}>365日カレンダー</Typography>
-                    <Typography variant="caption" color="text.secondary">横長</Typography>
-                  </Box>
-                  <ChartExportButton targetRef={calendarRef} filename="sns-skin-calendar" />
-                </Box>
-                <Box ref={calendarRef} sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
-                  <CalendarHeatmap records={records} />
-                </Box>
               </CardContent>
             </Card>
           </Grid>
