@@ -3,6 +3,7 @@
 // [Add] PBI-40: カレンダービュータブを追加
 // [Add] PBI-41: 週次ヒートマップタブを追加
 // [Update] PBI-43: SnsExportButton を削除（個別エクスポートに移行）
+// [Add] #47: 化粧品比較・外部要因タブにレーダーチャート切り替えボタンを追加
 // ============================================================
 
 import { useState } from 'react';
@@ -13,15 +14,22 @@ import {
   Grid,
   Tab,
   Tabs,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   Alert,
 } from '@mui/material';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import RadarIcon from '@mui/icons-material/Radar';
 // [Refactor] PBI-14: CircularProgress は LoadingBox 内に移動したためここでは不要
 import PeriodSelector from './PeriodSelector';
 import TrendChart from './TrendChart';
 import SkinRadarChart from './SkinRadarChart';
 import CosmeticsChart from './CosmeticsChart';
 import FactorsChart from './FactorsChart';
+// [Add] #47: レーダーチャート
+import CosmeticsRadarChart from './CosmeticsRadarChart';
+import FactorsRadarChart from './FactorsRadarChart';
 // [Add] PBI-40: カレンダービュー
 import CalendarHeatmap from './CalendarHeatmap';
 // [Add] PBI-41: 週次ヒートマップ
@@ -36,10 +44,12 @@ import { SCALE_MAX, getScoreColor } from '../../constants';
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodFilter>('month');
   const [tab, setTab] = useState(0);
+  // [Add] #47: 化粧品比較・外部要因タブのチャートモード
+  const [cosmeticsMode, setCosmeticsMode] = useState<'bar' | 'radar'>('bar');
+  const [factorsMode, setFactorsMode] = useState<'bar' | 'radar'>('bar');
   const { records, loading, error } = useSkinData(period);
   // [Add] PBI-40/41: カレンダー・ヒートマップは全期間データを使用
   const { records: allRecords } = useSkinData('all');
-
   const latestRecord = records.length > 0 ? records[records.length - 1] : null;
 
   return (
@@ -118,8 +128,51 @@ export default function Dashboard() {
 
                   {tab === 0 && <TrendChart records={records} />}
                   {tab === 1 && <SkinRadarChart record={latestRecord} />}
-                  {tab === 2 && <CosmeticsChart records={records} />}
-                  {tab === 3 && <FactorsChart records={records} />}
+
+                  {/* [Add] #47: 化粧品比較 — 棒グラフ / レーダーチャート切り替え */}
+                  {tab === 2 && (
+                    <>
+                      <Box display="flex" justifyContent="flex-end" mb={1}>
+                        <ToggleButtonGroup
+                          value={cosmeticsMode}
+                          exclusive
+                          onChange={(_, v: 'bar' | 'radar' | null) => { if (v) setCosmeticsMode(v); }}
+                          size="small"
+                        >
+                          <ToggleButton value="bar"><BarChartIcon fontSize="small" /></ToggleButton>
+                          <ToggleButton value="radar"><RadarIcon fontSize="small" /></ToggleButton>
+                        </ToggleButtonGroup>
+                      </Box>
+                      {cosmeticsMode === 'bar' ? (
+                        <CosmeticsChart records={records} />
+                      ) : (
+                        <CosmeticsRadarChart records={records} />
+                      )}
+                    </>
+                  )}
+
+                  {/* [Add] #47: 外部要因分析 — 棒グラフ / レーダーチャート切り替え */}
+                  {tab === 3 && (
+                    <>
+                      <Box display="flex" justifyContent="flex-end" mb={1}>
+                        <ToggleButtonGroup
+                          value={factorsMode}
+                          exclusive
+                          onChange={(_, v: 'bar' | 'radar' | null) => { if (v) setFactorsMode(v); }}
+                          size="small"
+                        >
+                          <ToggleButton value="bar"><BarChartIcon fontSize="small" /></ToggleButton>
+                          <ToggleButton value="radar"><RadarIcon fontSize="small" /></ToggleButton>
+                        </ToggleButtonGroup>
+                      </Box>
+                      {factorsMode === 'bar' ? (
+                        <FactorsChart records={records} />
+                      ) : (
+                        <FactorsRadarChart records={records} />
+                      )}
+                    </>
+                  )}
+
                   {/* [Add] PBI-40: 全期間データを渡す */}
                   {tab === 4 && <CalendarHeatmap records={allRecords} />}
                   {/* [Add] PBI-41: 全期間データを渡す */}

@@ -359,17 +359,18 @@ function NormalizedTable({
               <TableHead>
                 <TableRow>
                   <TableCell>日時</TableCell>
-                  <TableCell>おでこ</TableCell>
-                  <TableCell>ほお</TableCell>
+                  {/* [Add] #34: xs では詳細すぎる列を非表示 */}
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>おでこ</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>ほお</TableCell>
                   <TableCell>化粧水</TableCell>
-                  <TableCell>美容液</TableCell>
-                  <TableCell>乳液</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>美容液</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>乳液</TableCell>
                   {/* [Add] PBI-33: 下地カラムを追加 */}
-                  <TableCell>下地</TableCell>
-                  <TableCell align="center">出張</TableCell>
-                  <TableCell align="center">飲酒</TableCell>
-                  <TableCell>睡眠</TableCell>
-                  <TableCell>メモ</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>下地</TableCell>
+                  <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>出張</TableCell>
+                  <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>飲酒</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>睡眠</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>メモ</TableCell>
                   <TableCell align="center">操作</TableCell>
                 </TableRow>
               </TableHead>
@@ -380,17 +381,18 @@ function NormalizedTable({
                       {/* [Refactor] PBI-18: formatDateTime を使用 */}
                       {formatDateTime(r.timestamp)}
                     </TableCell>
-                    <TableCell><MetricsCell metrics={r.forehead} /></TableCell>
-                    <TableCell><MetricsCell metrics={r.cheek} /></TableCell>
+                    {/* [Add] #34: xs では詳細すぎる列を非表示 */}
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><MetricsCell metrics={r.forehead} /></TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><MetricsCell metrics={r.cheek} /></TableCell>
                     <TableCell><Typography variant="caption">{r.cosmetics.toner || '—'}</Typography></TableCell>
-                    <TableCell><Typography variant="caption">{r.cosmetics.essence || '—'}</Typography></TableCell>
-                    <TableCell><Typography variant="caption">{r.cosmetics.lotion || '—'}</Typography></TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><Typography variant="caption">{r.cosmetics.essence || '—'}</Typography></TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><Typography variant="caption">{r.cosmetics.lotion || '—'}</Typography></TableCell>
                     {/* [Add] PBI-33: 下地カラムを追加 */}
-                    <TableCell><Typography variant="caption">{r.cosmetics.primer || '—'}</Typography></TableCell>
-                    <TableCell align="center"><BoolIcon value={r.factors.businessTrip} /></TableCell>
-                    <TableCell align="center"><BoolIcon value={r.factors.alcohol} /></TableCell>
-                    <TableCell><Typography variant="caption">{r.factors.sleepHours}h</Typography></TableCell>
-                    <TableCell sx={{ maxWidth: 120 }}>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><Typography variant="caption">{r.cosmetics.primer || '—'}</Typography></TableCell>
+                    <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}><BoolIcon value={r.factors.businessTrip} /></TableCell>
+                    <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}><BoolIcon value={r.factors.alcohol} /></TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}><Typography variant="caption">{r.factors.sleepHours}h</Typography></TableCell>
+                    <TableCell sx={{ maxWidth: 120, display: { xs: 'none', sm: 'table-cell' } }}>
                       <Typography variant="caption" noWrap>{r.factors.notes || '—'}</Typography>
                     </TableCell>
                     <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>

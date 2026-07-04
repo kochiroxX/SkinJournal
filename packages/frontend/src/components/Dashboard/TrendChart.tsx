@@ -6,6 +6,7 @@
 //   - ツールチップに使用化粧品・ライフログ情報を追加表示
 // [Add] PBI-42: 面グラフ（AreaChart）モード切り替えトグルを追加
 // [Add] PBI-43: グラフ個別エクスポートボタンを追加
+// [Add] #35: データポイントクリック時に詳細ダイアログを表示
 // ============================================================
 
 import {
@@ -20,11 +21,21 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Box, Divider, Paper, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Paper,
+  Typography,
+} from '@mui/material';
 import { useRef, useState } from 'react';
 import ChartExportButton from '../shared/ChartExportButton';
 import { NormalizedRecord } from '../../types';
-import { METRIC_LABELS, METRIC_COLORS } from '../../constants';
+import { METRIC_LABELS, METRIC_COLORS, COSMETIC_FIELD_LABELS } from '../../constants';
 // [Refactor] PBI-14: 共有コンポーネントを使用
 import EmptyStateBox from '../shared/EmptyStateBox';
 // [Refactor] PBI-15: 部位選択トグルを FilterToggleGroup に委譲
@@ -150,6 +161,8 @@ export default function TrendChart({ records }: Props) {
   const [chartMode, setChartMode] = useState<'line' | 'area'>('line');
   // [Add] PBI-43: エクスポート用 ref
   const chartRef = useRef<HTMLDivElement>(null);
+  // [Add] #35: クリックで詳細を表示するデータポイント
+  const [selectedPoint, setSelectedPoint] = useState<TrendDataPoint | null>(null);
   const data = buildTrendData(records);
 
   if (data.length === 0) {
@@ -173,6 +186,12 @@ export default function TrendChart({ records }: Props) {
   const yMin = Math.max(0, Math.min(20, Math.floor(dataMin / 10) * 10));
   const yMax = Math.max(70, Math.ceil(dataMax / 10) * 10);
 
+  // [Add] #35: データポイントクリック時のアクティブドット設定（全 Line/Area 共通）
+  const activeDotProps = {
+    r: 5,
+    onClick: (_: unknown, payload: { payload: TrendDataPoint }) => setSelectedPoint(payload.payload),
+  };
+
   // [Add] PBI-42 + PBI-43: 共通のチャート子要素
   const chartChildren = (
     <>
@@ -186,17 +205,17 @@ export default function TrendChart({ records }: Props) {
         <>
           {chartMode === 'line' ? (
             <>
-              <Line type="monotone" dataKey="foreheadTone" name={`おでこ・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
-              <Line type="monotone" dataKey="foreheadMoisture" name={`おでこ・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
-              <Line type="monotone" dataKey="foreheadOil" name={`おでこ・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
-              <Line type="monotone" dataKey="foreheadElasticity" name={`おでこ・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 2" />
+              <Line type="monotone" dataKey="foreheadTone" name={`おでこ・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} strokeDasharray="6 2" />
+              <Line type="monotone" dataKey="foreheadMoisture" name={`おでこ・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} strokeDasharray="6 2" />
+              <Line type="monotone" dataKey="foreheadOil" name={`おでこ・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} strokeDasharray="6 2" />
+              <Line type="monotone" dataKey="foreheadElasticity" name={`おでこ・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} strokeDasharray="6 2" />
             </>
           ) : (
             <>
-              <Area type="monotone" dataKey="foreheadTone" name={`おでこ・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} fill={METRIC_COLORS.tone} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
-              <Area type="monotone" dataKey="foreheadMoisture" name={`おでこ・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} fill={METRIC_COLORS.moisture} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
-              <Area type="monotone" dataKey="foreheadOil" name={`おでこ・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} fill={METRIC_COLORS.oil} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
-              <Area type="monotone" dataKey="foreheadElasticity" name={`おでこ・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} fill={METRIC_COLORS.elasticity} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} strokeDasharray="6 2" />
+              <Area type="monotone" dataKey="foreheadTone" name={`おでこ・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} fill={METRIC_COLORS.tone} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} strokeDasharray="6 2" />
+              <Area type="monotone" dataKey="foreheadMoisture" name={`おでこ・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} fill={METRIC_COLORS.moisture} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} strokeDasharray="6 2" />
+              <Area type="monotone" dataKey="foreheadOil" name={`おでこ・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} fill={METRIC_COLORS.oil} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} strokeDasharray="6 2" />
+              <Area type="monotone" dataKey="foreheadElasticity" name={`おでこ・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} fill={METRIC_COLORS.elasticity} fillOpacity={0.15} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} strokeDasharray="6 2" />
             </>
           )}
         </>
@@ -206,17 +225,17 @@ export default function TrendChart({ records }: Props) {
         <>
           {chartMode === 'line' ? (
             <>
-              <Line type="monotone" dataKey="cheekTone" name={`ほお・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="cheekMoisture" name={`ほお・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="cheekOil" name={`ほお・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="cheekElasticity" name={`ほお・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="cheekTone" name={`ほお・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} />
+              <Line type="monotone" dataKey="cheekMoisture" name={`ほお・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} />
+              <Line type="monotone" dataKey="cheekOil" name={`ほお・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} />
+              <Line type="monotone" dataKey="cheekElasticity" name={`ほお・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} strokeWidth={2} dot={{ r: 3 }} activeDot={activeDotProps} />
             </>
           ) : (
             <>
-              <Area type="monotone" dataKey="cheekTone" name={`ほお・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} fill={METRIC_COLORS.tone} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
-              <Area type="monotone" dataKey="cheekMoisture" name={`ほお・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} fill={METRIC_COLORS.moisture} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
-              <Area type="monotone" dataKey="cheekOil" name={`ほお・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} fill={METRIC_COLORS.oil} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
-              <Area type="monotone" dataKey="cheekElasticity" name={`ほお・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} fill={METRIC_COLORS.elasticity} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} />
+              <Area type="monotone" dataKey="cheekTone" name={`ほお・${METRIC_LABELS.tone}`} stroke={METRIC_COLORS.tone} fill={METRIC_COLORS.tone} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} />
+              <Area type="monotone" dataKey="cheekMoisture" name={`ほお・${METRIC_LABELS.moisture}`} stroke={METRIC_COLORS.moisture} fill={METRIC_COLORS.moisture} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} />
+              <Area type="monotone" dataKey="cheekOil" name={`ほお・${METRIC_LABELS.oil}`} stroke={METRIC_COLORS.oil} fill={METRIC_COLORS.oil} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} />
+              <Area type="monotone" dataKey="cheekElasticity" name={`ほお・${METRIC_LABELS.elasticity}`} stroke={METRIC_COLORS.elasticity} fill={METRIC_COLORS.elasticity} fillOpacity={0.25} strokeWidth={2} dot={{ r: 2 }} activeDot={activeDotProps} />
             </>
           )}
         </>
@@ -261,6 +280,62 @@ export default function TrendChart({ records }: Props) {
           )}
         </ResponsiveContainer>
       </Box>
+
+      {/* [Add] #35: データポイントクリック時の詳細ダイアログ */}
+      {selectedPoint && (
+        <Dialog open onClose={() => setSelectedPoint(null)} maxWidth="sm" fullWidth>
+          <DialogTitle>{formatDateTime(selectedPoint.timestamp)}</DialogTitle>
+          <DialogContent dividers>
+            <Box display="flex" flexDirection="column" gap={2}>
+              {/* おでこ指標 */}
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>おでこ</Typography>
+                <Box display="flex" gap={2} flexWrap="wrap">
+                  <Typography variant="body2">{METRIC_LABELS.tone}: {selectedPoint.foreheadTone}</Typography>
+                  <Typography variant="body2">{METRIC_LABELS.moisture}: {selectedPoint.foreheadMoisture}</Typography>
+                  <Typography variant="body2">{METRIC_LABELS.oil}: {selectedPoint.foreheadOil}</Typography>
+                  <Typography variant="body2">{METRIC_LABELS.elasticity}: {selectedPoint.foreheadElasticity}</Typography>
+                </Box>
+              </Box>
+              {/* ほお指標 */}
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>ほお</Typography>
+                <Box display="flex" gap={2} flexWrap="wrap">
+                  <Typography variant="body2">{METRIC_LABELS.tone}: {selectedPoint.cheekTone}</Typography>
+                  <Typography variant="body2">{METRIC_LABELS.moisture}: {selectedPoint.cheekMoisture}</Typography>
+                  <Typography variant="body2">{METRIC_LABELS.oil}: {selectedPoint.cheekOil}</Typography>
+                  <Typography variant="body2">{METRIC_LABELS.elasticity}: {selectedPoint.cheekElasticity}</Typography>
+                </Box>
+              </Box>
+
+              <Divider />
+
+              {/* 使用化粧品 */}
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>使用化粧品</Typography>
+                {(Object.entries(COSMETIC_FIELD_LABELS) as [keyof typeof COSMETIC_FIELD_LABELS, string][]).map(([key, label]) => (
+                  <Typography key={key} variant="body2">
+                    {label}: {selectedPoint[key] || '未使用'}
+                  </Typography>
+                ))}
+              </Box>
+
+              <Divider />
+
+              {/* 外部要因 */}
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>外部要因</Typography>
+                <Typography variant="body2">睡眠: {selectedPoint.sleepHours}h</Typography>
+                <Typography variant="body2">飲酒: {selectedPoint.alcohol ? 'あり' : 'なし'}</Typography>
+                <Typography variant="body2">出張: {selectedPoint.businessTrip ? 'あり' : 'なし'}</Typography>
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSelectedPoint(null)}>閉じる</Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 }
