@@ -187,7 +187,9 @@ export default function TrendChart({ records }: Props) {
   const yMax = Math.max(70, Math.ceil(dataMax / 10) * 10);
 
   // [Add] #35: データポイントクリック時のアクティブドット設定（全 Line/Area 共通）
-  const activeDotProps = {
+  // recharts の DotProps.onClick は SVG MouseEventHandler だが、実際には第2引数にペイロードが渡される
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activeDotProps: any = {
     r: 5,
     onClick: (_: unknown, payload: { payload: TrendDataPoint }) => setSelectedPoint(payload.payload),
   };
