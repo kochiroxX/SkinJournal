@@ -37,6 +37,7 @@ import { useSkinData, useCosmeticsMaster } from '../../hooks/useSkinData';
 import { useNotifications } from '../../hooks/useNotifications';
 import { NormalizedRecord, SkinMetrics } from '../../types';
 import { formatFullDate } from '../../utils/format';
+import { recordHealthScore } from '../../utils/metrics';
 import { METRIC_COLORS, METRIC_LABELS, SCALE_MAX, CARD_THEMES, CARD_SIZES, CardTheme, CardSize } from '../../constants';
 import WeeklySummaryCard from './WeeklySummaryCard';
 import WeeklyScoreCard from './WeeklyScoreCard';
@@ -46,21 +47,21 @@ import CosmeticsRankingCard from './CosmeticsRankingCard';
 import FactorsInsightCard from './FactorsInsightCard';
 
 // ============================================================
-// スコアに応じた色・ラベルを返すユーティリティ（スコア範囲 20-70 を想定）
+// スコアに応じた色・ラベルを返すユーティリティ（0-100 正規化スコアを想定）
 // ============================================================
 function scoreColor(v: number): string {
-  if (v >= 60) return '#388e3c';
+  if (v >= 70) return '#388e3c';
   if (v >= 45) return '#e65100';
   return '#c62828';
 }
 function scoreBgColor(v: number): string {
-  if (v >= 60) return '#e8f5e9';
+  if (v >= 70) return '#e8f5e9';
   if (v >= 45) return '#fff3e0';
   return '#fce4ec';
 }
 function scoreLabel(avg: number): string {
-  if (avg >= 65) return '絶好調 ✨';
-  if (avg >= 55) return '良好 💪';
+  if (avg >= 75) return '絶好調 ✨';
+  if (avg >= 60) return '良好 💪';
   if (avg >= 45) return 'まずまず 🌿';
   return 'ケア強化 🌙';
 }
@@ -70,10 +71,7 @@ function scoreLabel(avg: number): string {
 // ============================================================
 function generateAiPrompt(record: NormalizedRecord): string {
   const date = formatFullDate(record.timestamp);
-  const avg = Math.round(
-    (record.forehead.tone + record.forehead.moisture + record.forehead.oil + record.forehead.elasticity +
-     record.cheek.tone + record.cheek.moisture + record.cheek.oil + record.cheek.elasticity) / 8
-  );
+  const avg = Math.round(recordHealthScore(record));
 
   const cosmeticSection = [
     record.cosmetics.toner   && `　化粧水: ${record.cosmetics.toner}`,
@@ -124,10 +122,7 @@ function generateWeeklyAiPrompt(records: NormalizedRecord[]): string {
   if (weekRecords.length === 0) return '';
 
   const avgScore = Math.round(
-    weekRecords.reduce((s, r) =>
-      s + (r.forehead.tone + r.forehead.moisture + r.forehead.oil + r.forehead.elasticity +
-           r.cheek.tone + r.cheek.moisture + r.cheek.oil + r.cheek.elasticity) / 8,
-    0) / weekRecords.length
+    weekRecords.reduce((s, r) => s + recordHealthScore(r), 0) / weekRecords.length
   );
 
   return [
@@ -195,13 +190,10 @@ function MetricBubble({ label, value, color }: { label: string; value: number; c
 }
 
 function ScoreSummaryCard({ record }: SummaryCardProps) {
-  const avg = Math.round(
-    (record.forehead.tone + record.forehead.moisture + record.forehead.oil + record.forehead.elasticity +
-     record.cheek.tone + record.cheek.moisture + record.cheek.oil + record.cheek.elasticity) / 8
-  );
+  const avg = Math.round(recordHealthScore(record));
   const color   = scoreColor(avg);
   const bgColor = scoreBgColor(avg);
-  const progressPct = Math.round(Math.min(100, Math.max(0, (avg - 20) / 50 * 100)));
+  const progressPct = avg; // 既に 0-100
 
   return (
     <Box
@@ -277,6 +269,18 @@ function ScoreSummaryCard({ record }: SummaryCardProps) {
           <Typography sx={{ fontSize: { xs: 16, sm: 18 }, fontWeight: 800, color: '#212121', lineHeight: 1.2 }}>
             {scoreLabel(avg)}
           </Typography>
+          {/* 各指標平均（肌色除外） */}
+          <Box display="flex" gap={1} mt={0.5} flexWrap="wrap">
+            {[
+              { label: '水分', key: 'moisture' as const },
+              { label: '油分', key: 'oil' as const },
+              { label: '弾性', key: 'elasticity' as const },
+            ].map(({ label, key }) => (
+              <Typography key={key} sx={{ fontSize: 9, color: '#757575', lineHeight: 1 }}>
+                {label} {Math.round((record.forehead[key] + record.cheek[key]) / 2)}
+              </Typography>
+            ))}
+          </Box>
         </Box>
       </Box>
 

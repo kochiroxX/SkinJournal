@@ -34,7 +34,7 @@ function normalizeScore(value: number, min: number, max: number): number {
 
 /**
  * 1レコードの健康スコア（0-100）を各指標の適正範囲で算出する。
- *   tone:        20-70（高いほど良い）
+ * 肌色（tone）は主観・照明依存が強いため除外し、6指標の平均を使用する。
  *   moisture:    30-50（低めは乾燥、高めは過剰）
  *   oil:         30-50（低めは乾燥、高めは過剰）
  *   elasticity:  30-70（高いほど良い）
@@ -42,11 +42,9 @@ function normalizeScore(value: number, min: number, max: number): number {
 export function recordHealthScore(r: NormalizedRecord): number {
   const score = (v: number, min: number, max: number) => normalizeScore(v, min, max);
   return (
-    score(r.forehead.tone,        20, 70) + score(r.forehead.moisture, 30, 50) +
-    score(r.forehead.oil,         30, 50) + score(r.forehead.elasticity, 30, 70) +
-    score(r.cheek.tone,           20, 70) + score(r.cheek.moisture,   30, 50) +
-    score(r.cheek.oil,            30, 50) + score(r.cheek.elasticity,  30, 70)
-  ) / 8;
+    score(r.forehead.moisture, 30, 50) + score(r.forehead.oil, 30, 50) + score(r.forehead.elasticity, 30, 70) +
+    score(r.cheek.moisture,   30, 50) + score(r.cheek.oil,    30, 50) + score(r.cheek.elasticity,    30, 70)
+  ) / 6;
 }
 
 /**
