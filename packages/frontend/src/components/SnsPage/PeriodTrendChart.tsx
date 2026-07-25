@@ -80,7 +80,8 @@ export default function PeriodTrendChart({ records, period, theme, size: _size }
             {isWeekly ? (
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 12, angle: -30 }}
+                tick={{ fontSize: 12 }}
+                angle={-30}
                 textAnchor="end"
                 interval={0}
                 height={50}
