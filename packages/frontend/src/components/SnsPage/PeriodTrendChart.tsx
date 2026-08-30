@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import {
   AreaChart,
@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceLine,
-  ResponsiveContainer,
 } from 'recharts';
 import { NormalizedRecord } from '../../types';
 import { CardTheme, CardSize, CARD_THEMES } from '../../constants';
@@ -25,7 +24,22 @@ interface PeriodTrendChartProps {
 
 export default function PeriodTrendChart({ records, period, theme, size: _size }: PeriodTrendChartProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(520);
   const t = CARD_THEMES[theme];
+
+  // ResponsiveContainer は html-to-image で幅が解決されないため
+  // ResizeObserver で実寸を計測して AreaChart に明示的な width を渡す
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const obs = new ResizeObserver(entries => {
+      for (const e of entries) {
+        // p:2 = 16px × 2 = 32px のパディングを引く
+        setChartWidth(Math.max(200, e.contentRect.width - 32));
+      }
+    });
+    obs.observe(cardRef.current);
+    return () => obs.disconnect();
+  }, []);
   const primaryColor = t.primaryColor;
 
   // 日付ごとにグループ化してスコアを平均
@@ -68,8 +82,7 @@ export default function PeriodTrendChart({ records, period, theme, size: _size }
           border: `1px solid ${t.borderColor}`,
         }}
       >
-        <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: isWeekly ? 30 : 10 }}>
+        <AreaChart width={chartWidth} height={240} data={data} margin={{ top: 10, right: 16, left: 0, bottom: isWeekly ? 30 : 10 }}>
             <defs>
               <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={primaryColor} stopOpacity={0.4} />
@@ -117,7 +130,6 @@ export default function PeriodTrendChart({ records, period, theme, size: _size }
               activeDot={{ r: 9 }}
             />
           </AreaChart>
-        </ResponsiveContainer>
       </Box>
     </Box>
   );
